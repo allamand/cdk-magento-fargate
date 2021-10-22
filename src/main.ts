@@ -4,21 +4,25 @@ import {
   AwsLogDriverMode,
   Cluster,
   ContainerImage,
+  ExecuteCommandLogging,
   FargateService,
   FargateTaskDefinition,
 } from '@aws-cdk/aws-ecs';
 import { ApplicationLoadBalancer, ListenerCertificate } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Policy, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { Key } from '@aws-cdk/aws-kms';
+import { LogGroup } from '@aws-cdk/aws-logs';
 import { Credentials, DatabaseCluster, DatabaseClusterEngine } from '@aws-cdk/aws-rds';
 import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
 import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
+import { Bucket } from '@aws-cdk/aws-s3';
 import { StringParameter } from '@aws-cdk/aws-ssm';
 import { App, Construct, Stack, StackProps, CfnOutput, Duration, SecretValue, RemovalPolicy } from '@aws-cdk/core';
 import { EksUtilsTask } from './eksutils';
+import * as opensearch from '@aws-cdk/aws-opensearchservice';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
-
-interface MyStackProps extends StackProps {
+export interface MyStackProps extends StackProps {
   vpcTagName?: string; // Specify if you want to reuse existing VPC (or "default" for default VPC), else it will create a new one
   clusterName: string; // Specify if you want to reuse existing ECS cluster, else it will create new one
   createCluster: boolean;
@@ -29,10 +33,10 @@ interface MyStackProps extends StackProps {
 export class MyStack extends Stack {
   constructor(scope: Construct, id: string, props: MyStackProps) {
     super(scope, id, props);
-
+    const stack = Stack.of(this);
     // define resources here...
 
-    const domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: props.domainZone });
+
 
     //Define VPC
     var vpc = undefined;
@@ -46,10 +50,29 @@ export class MyStack extends Stack {
       vpc = new Vpc(this, 'VPC', { maxAzs: 2 });
     }
 
+    //docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html
+    // create kms key
+    const kmsKey = new Key(this, 'ECSKmsKey', {
+      alias: 'kms-ecs-' + props.clusterName,
+    });
+    new CfnOutput(stack, 'EcsKMSAlias', { value: kmsKey.keyArn });
+    const execLogGroup = new LogGroup(this, 'ECSExecLogGroup', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      logGroupName: '/ecs/secu/exec/' + props.clusterName,
+      encryptionKey: kmsKey,
+    });
+    new CfnOutput(stack, 'EcsExecLogGroupOut', { value: execLogGroup.logGroupName });
+    const execBucket = new Bucket(this, 'EcsExecBucket', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      //encryption: BucketEncryption.KMS,
+      encryptionKey: kmsKey,
+    });
+    new CfnOutput(stack, 'EcsExecBucketOut', { value: execBucket.bucketName });
+
     //Define ECS Cluster
     // Reference existing network and cluster infrastructure
     var cluster = undefined;
-
     if (!props.createCluster) {
       cluster = Cluster.fromClusterAttributes(this, 'Cluster', {
         clusterName: props.clusterName,
@@ -57,11 +80,25 @@ export class MyStack extends Stack {
         securityGroups: [],
       });
     } else {
+      /*
+       ** Create new ECS Cluster
+       */
       cluster = new Cluster(this, 'Cluster', {
         clusterName: props.clusterName,
         vpc,
         containerInsights: true,
         enableFargateCapacityProviders: true,
+        executeCommandConfiguration: {
+          kmsKey,
+          logConfiguration: {
+            cloudWatchLogGroup: execLogGroup,
+            cloudWatchEncryptionEnabled: true,
+            s3Bucket: execBucket,
+            s3EncryptionEnabled: true,
+            s3KeyPrefix: 'exec-command-output',
+          },
+          logging: ExecuteCommandLogging.OVERRIDE,
+        },
       });
     }
     new CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
@@ -113,6 +150,20 @@ export class MyStack extends Stack {
     });
     rdsSG.addIngressRule(Peer.anyIpv4(), Port.tcp(3306), 'allow 3306 inbound from lambda');
 
+    // OpenSearch security group which allow port 3306
+    const openSearchSG = new SecurityGroup(this, 'openSearchSecurityGroup', {
+      vpc: vpc,
+      description: 'allow All inbound',
+      allowAllOutbound: true,
+    });
+
+    // OpenSearch security group which allow port 3306
+    const serviceSG = new SecurityGroup(this, 'serviceSecurityGroup', {
+      vpc: vpc,
+      description: 'ecs service securitygroup',
+      allowAllOutbound: true,
+    });
+
     /*
      ** Create RDS Aurora Mysql database
      */
@@ -127,11 +178,86 @@ export class MyStack extends Stack {
       },
       defaultDatabaseName: DB_NAME,
     });
+    //Connecto to DB
+    //MARIADB_HOST=mariadb
+    //MARIADB_ROOT_PASSWORD=
+    //MARIADB_ROOT_USER = root;
+    //mysql -h $MAGENTO_DATABASE_HOST -u $MAGENTO_DATABASE_USER -p$MAGENTO_DATABASE_PASSWORD $MAGENTO_DATABASE_NAME
+    //mysql -h $MAGENTO_DATABASE_HOST -u $MAGENTO_DATABASE_USER -pPassw0rd! $MAGENTO_DATABASE_NAME
+    //mysql -h $MAGENTO_DATABASE_HOST -u magentouser -pPassw0rd! magento
+    //show databases;
+    //show tables;
+    ///opt/bitnami/scripts/magento/entrypoint.sh /opt/bitnami/scripts/magento/run.sh
+    ///opt/bitnami/scripts/magento/setup.sh
 
     /***
      *  set the DB_HOST and HTTP_HOST which will used in the lambda environment
      */
     //DB_HOST = db.clusterEndpoint.hostname;
+
+    /*
+     ** Create OpenSearch
+     * https://code.amazon.com/packages/D16GConstructsCDK/blobs/mainline/--/src/aws-elasticsearch/elasticsearch.ts
+     * **
+     * If a resource-based access policy contains IAM users or roles, clients must send signed requests using AWS Signature Version 4.
+     * As such, access policies can conflict with fine-grained access control, especially if you use the internal user database and
+     * HTTP basic authentication. You can't sign a request with a user name and password and IAM credentials. In general, if you enable
+     * fine-grained access control, we recommend using a domain access policy that doesn't require signed requests.
+     *
+     */
+    const elasticsearchDomain =
+      this.node.tryGetContext('elasticsearch_domain') || process.env.elasticsearch_domain || 'magento-cdk';
+    //const account = this.node.tryGetContext('account') || process.env.CDK_DEFAULT_ACCOUNT;
+    // const osPolicy = new PolicyStatement({
+    //   effect: Effect.ALLOW,
+    //   actions: ['es:*'],
+    //   resources: ['arn:aws:es:eu-west-1:' + account + ':domain/' + elasticsearchDomain + '/*'],
+    //   //principals: [new AccountRootPrincipal()],
+    //   principals: [new AnyPrincipal()],
+    // });
+    const esDomain = new opensearch.Domain(this, 'Domain', {
+      version: opensearch.EngineVersion.OPENSEARCH_1_0,
+      domainName: elasticsearchDomain,
+      //accessPolicies: [osPolicy], // Default No access policies
+      removalPolicy: RemovalPolicy.DESTROY,
+      securityGroups: [openSearchSG],
+      //default 1 r5.large.search datanode; no dedicated master nodes
+      // capacity: {
+      //   masterNodes: 5,
+      //   dataNodes: 20,
+      // },
+      ebs: {
+        volumeSize: 20,
+      },
+      //if you need
+      // zoneAwareness: {
+      //   availabilityZoneCount: 3,
+      // },
+      logging: {
+        slowSearchLogEnabled: true,
+        appLogEnabled: true,
+        slowIndexLogEnabled: true,
+      },
+
+      //encryption
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
+      encryptionAtRest: {
+        enabled: true,
+      },
+      fineGrainedAccessControl: {
+        masterUserName: 'magento',
+        masterUserPassword: DB_PASSWORD,
+      },
+      useUnsignedBasicAuth: true,
+      enableVersionUpgrade: true,
+    });
+
+    const masterUserPassword = esDomain.masterUserPassword;
+    new CfnOutput(this, 'EsDomainEndpoint', { value: esDomain.domainEndpoint });
+    new CfnOutput(this, 'EsDomainName', { value: esDomain.domainName });
+    new CfnOutput(this, 'EsMasterUserPassword', { value: masterUserPassword!.toString() });
+    process.env.elasticsearch_host = esDomain.domainEndpoint;
 
     //Define TLS Certificate
     // Lookup pre-existing TLS certificate
@@ -141,26 +267,28 @@ export class MyStack extends Stack {
     //const certificate = Certificate.fromCertificateArn(this, 'Cert', certificateArn);
     const certificate = ListenerCertificate.fromArn(certificateArn);
 
+    //github.com/aws/aws-cdk/tree/master/packages/%40aws-cdk/aws-ecs
     const taskDefinition = new FargateTaskDefinition(this, 'TaskDef');
 
     //Create Load Balancer
     const lb = new ApplicationLoadBalancer(this, 'ALB', {
       vpc,
       internetFacing: true,
-      loadBalancerName: 'magento',
+      loadBalancerName: cluster.clusterName + '-magento',
     });
+    const listener = lb.addListener('Listener', { port: 443 });
+    listener.addCertificates('cert', [certificate]);
+    
+    const domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: props.domainZone });
     const record = new ARecord(this, 'AliasRecord', {
       zone: domainZone,
       recordName: props.domainName + '.' + props.domainZone,
       target: RecordTarget.fromAlias(new LoadBalancerTarget(lb)),
     });
     record.domainName;
-    new CfnOutput(this, 'record', { value: record.domainName });
+    new CfnOutput(this, 'magentoURL', { value: "https://"+record.domainName });
 
-    const listener = lb.addListener('Listener', { port: 443 });
-    listener.addCertificates('cert', [certificate]);
-
-    const container = taskDefinition.addContainer('web', {
+    const container = taskDefinition.addContainer('magento', {
       image: ContainerImage.fromRegistry('docker.io/bitnami/magento:2'),
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       //executionRole: arn:aws:iam::382076407153:role/ecsTaskExecutionRole
@@ -170,13 +298,14 @@ export class MyStack extends Stack {
         MAGENTO_HOST: lb.loadBalancerDnsName,
         MAGENTO_DATABASE_HOST: db.clusterEndpoint.hostname,
         MAGENTO_DATABASE_PORT_NUMBER: '3306',
-        MAGENTO_DATABASE_USER: DB_PASSWORD,
-        MAGENTO_DATABASE_PASSWORD: 'eJK1TMjF5i1JA8A4wVI3',
+        MAGENTO_DATABASE_USER: DB_USER,
+        MAGENTO_DATABASE_PASSWORD: DB_PASSWORD,
         MAGENTO_DATABASE_NAME: 'magento',
-        ELASTICSEARCH_HOST: '',
-        ELASTICSEARCH_PORT_NUMBER: '9200',
+        ELASTICSEARCH_HOST: esDomain.domainEndpoint,
+        ELASTICSEARCH_PORT_NUMBER: '443',
+        MAGENTO_ELASTICSEARCH_ENABLE_AUTH: 'yes',
         MAGENTO_ELASTICSEARCH_USER: 'magento',
-        MAGENTO_ELASTICSEARCH_PASSWORD: 'MagentoPassw0rd!',
+        MAGENTO_ELASTICSEARCH_PASSWORD: masterUserPassword!.toString(),
       },
       memoryReservationMiB: 256,
       cpu: 256,
@@ -198,21 +327,22 @@ export class MyStack extends Stack {
           'logs:CreateLogStream',
           'logs:PutLogEvents',
         ],
-      })
+      }),
     );
     container.environmentFiles;
 
     //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-readme.html
     const service = new FargateService(this, 'magentoService', {
       cluster,
-      serviceName: 'magento',
+      //serviceName: 'magento',
       taskDefinition,
       enableExecuteCommand: true,
-      circuitBreaker: { rollback: true },
+      //circuitBreaker: { rollback: true },
       // cloudMapOptions: {
       //   // Create A records - useful for AWSVPC network mode.
       //   dnsRecordType: DnsRecordType.A,
       // },
+      securityGroups: [serviceSG],
       capacityProviderStrategies: [
         {
           capacityProvider: 'FARGATE_SPOT',
@@ -224,6 +354,13 @@ export class MyStack extends Stack {
           base: 1,
         },
       ],
+    });
+    //allow to communicate with OpenSearch
+    openSearchSG.addIngressRule(serviceSG, Port.allTraffic(), 'allow traffic fom ECS service');
+    serviceSG.addIngressRule(openSearchSG, Port.allTraffic(), 'allow traffic fom Opensearch');
+
+    new CfnOutput(stack, 'EcsExecCommandMagento', {
+      value: `ecs_exec_service ${cluster.clusterName} ${service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
     });
 
     const targetGroup = listener.addTargets('montecarlo', {
@@ -237,7 +374,7 @@ export class MyStack extends Stack {
     });
     lb.addRedirect; //default to http -> https
 
-    new CfnOutput(this, 'EcsService', { value: service.serviceName });
+    new CfnOutput(this, 'MagentoService', { value: service.serviceName });
 
     // SConfigure Load Balancer TargetGroups for peed up deployments
     targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
@@ -259,7 +396,7 @@ export class MyStack extends Stack {
     service.taskDefinition.taskRole.attachInlinePolicy(
       new Policy(this, 'policy', {
         statements: [policyStatement],
-      })
+      }),
     );
 
     //add Autoscaling
@@ -273,19 +410,22 @@ export class MyStack extends Stack {
       targetGroup: targetGroup,
     });
 
-    new EksUtilsTask(this, 'eksutils', {
+    new EksUtilsTask(this, 'eksutils', props, {
       vpc: vpc,
       cluster: cluster,
+      name: 'eksutils',
+      kmsKey: kmsKey,
+      execBucket: execBucket,
+      execLogGroup: execLogGroup,
     });
   }
 }
 
 // for development, use account/region from cdk cli
-
-const domainName = process.env.DOMAIN_NAME ? process.env.DOMAIN_NAME : 'magento';
+const stackName = 'magento';
 const domainZone = process.env.DOMAIN_ZONE ? process.env.DOMAIN_ZONE : 'ecs.demo3.allamand.com';
 const vpcTagName = process.env.VPC_TAG_NAME ? process.env.VPC_TAG_NAME : 'ecsworkshop-base/BaseVPC';
-const clusterName = process.env.CLUSTER_NAME ? process.env.CLUSTER_NAME : 'magento';
+const clusterName = process.env.CLUSTER_NAME ? process.env.CLUSTER_NAME : stackName;
 //const repoName = process.env.ECR_REPOSITORY ? process.env.ECR_REPOSITORY : 'allamand/ecsdemo-capacityproviders';
 //const tag = process.env.IMAGE_TAG ? process.env.IMAGE_TAG : '1.0';
 
@@ -298,8 +438,8 @@ const devEnv = {
 
 const app = new App();
 
-new MyStack(app, 'magento', {
-  domainName: domainName,
+new MyStack(app, stackName, {
+  domainName: stackName,
   domainZone: domainZone,
   vpcTagName: vpcTagName,
   clusterName: clusterName,

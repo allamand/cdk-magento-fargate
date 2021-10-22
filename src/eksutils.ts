@@ -5,21 +5,21 @@ import {
   FargateTaskDefinition,
   ICluster,
   RepositoryImage,
-  Cluster,
   FargateService,
   FargatePlatformVersion,
-  CfnService,
-  CfnCluster,
-  TaskDefinition,
 } from '@aws-cdk/aws-ecs';
 import { NetworkLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns';
 import { IFileSystem, FileSystem } from '@aws-cdk/aws-efs';
-import { ApplicationListener, ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
+import { ApplicationLoadBalancer, ListenerCertificate } from '@aws-cdk/aws-elasticloadbalancingv2';
+import { PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
+import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
+import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
 import { Bucket } from '@aws-cdk/aws-s3';
+import { StringParameter } from '@aws-cdk/aws-ssm';
 import { CfnOutput, Construct, Duration, RemovalPolicy, Stack } from '@aws-cdk/core';
+import { MyStackProps } from './main';
 
 const DEFAULTS = {
   eksutilsContainer: 'public.ecr.aws/seb-demo/eksutils',
@@ -28,27 +28,54 @@ const DEFAULTS = {
 /**
  * construct properties for Apisix
  */
-export interface EksUtilsTaskProps {
+export interface ServiceTaskProps {
   /**
-   * Vpc for the APISIX
+   * Vpc for the Service
    * @default - create a new VPC or use existing one
    */
-  readonly vpc: IVpc;
+  readonly vpc?: IVpc;
+
   /**
    * Amazon ECS cluster
    * @default - create a new cluster
    */
-  readonly cluster?: ICluster;
+  readonly cluster: ICluster;
+
   /**
-   * Amazon EFS filesystem for etcd data persistence
+   * Service Name
+   *
+   */
+  readonly name: string;
+
+  /**
+   * Amazon EFS filesystem
    * @default - ceate a new filesystem
    */
   readonly efsFilesystem?: IFileSystem;
+
   /**
-   * container for APISIX API service
+   * container image for the service
    * @default - public.ecr.aws/d7p2r8s3/apisix
    */
-  readonly eksutilsContainer?: ContainerImage;
+  readonly serviceContainer?: ContainerImage;
+
+  /**
+   * cKMS Key to encrypt SSM sessions and bucket
+   * @default - public.ecr.aws/d7p2r8s3/apisix
+   */
+  readonly kmsKey: Key;
+
+  /**
+   * Bucket to store ecs exec commands
+   * @default -
+   */
+  readonly execBucket: Bucket;
+
+  /**
+   * Log group to log ecs exec commands
+   * @default - '/ecs/secu/exec/' + cluster.clusterName,
+   */
+  readonly execLogGroup: LogGroup;
 }
 
 /**
@@ -67,16 +94,18 @@ export interface WebServiceOptions {
  */
 export class EksUtilsTask extends Construct {
   readonly vpc: IVpc;
+  readonly name: string;
   readonly cluster: ICluster;
   readonly envVar: { [key: string]: string };
-  constructor(scope: Construct, id: string, props: EksUtilsTaskProps) {
+  constructor(scope: Construct, id: string, clusterProps: MyStackProps, props: ServiceTaskProps) {
     super(scope, id);
 
     const stack = Stack.of(this);
-    const vpc = props.vpc;
-    //const vpc = props.vpc ?? getOrCreateVpc(this);
-    this.vpc = vpc!;
-    const cluster = props.cluster ?? new Cluster(this, 'Cluster', { vpc });
+    this.vpc = props.vpc!;
+    const vpc = this.vpc;
+    this.name = props.name;
+    const name = this.name;
+    const cluster = props.cluster!;
     this.cluster = cluster;
 
     // const requiredContextVariables = [
@@ -101,32 +130,32 @@ export class EksUtilsTask extends Construct {
      */
     const fs = props.efsFilesystem ?? this._createEfsFilesystem();
 
-    const taskDefinition = new FargateTaskDefinition(this, 'TaskEksutils', {
+    const task = new FargateTaskDefinition(this, props.name + 'Task', {
       memoryLimitMiB: 512,
       cpu: 256,
     });
-    const eksutils = taskDefinition.addContainer('eksutils', {
+    const container = task.addContainer(props.name, {
       image: ContainerImage.fromRegistry(DEFAULTS.eksutilsContainer),
       logging: new AwsLogDriver({
-        streamPrefix: '/ecs/eksutils/',
+        streamPrefix: '/ecs/' + name + '/',
         logRetention: RetentionDays.ONE_DAY,
       }),
-      environment: {
-        ADMIN_KEY_ADMIN: this.envVar.ADMIN_KEY_ADMIN,
-        ADMIN_KEY_VIEWER: this.envVar.ADMIN_KEY_VIEWER,
-      },
+      // environment: {
+      //   ADMIN_KEY_ADMIN: this.envVar.ADMIN_KEY_ADMIN,
+      //   ADMIN_KEY_VIEWER: this.envVar.ADMIN_KEY_VIEWER,
+      // },
     });
-    eksutils.addPortMappings({
+    container.addPortMappings({
       containerPort: 8080,
     });
 
-    taskDefinition.addVolume({
+    task.addVolume({
       name: 'efs',
       efsVolumeConfiguration: {
         fileSystemId: fs.fileSystemId,
       },
     });
-    eksutils.addMountPoints({
+    container.addMountPoints({
       containerPath: '/efs_data',
       sourceVolume: 'efs',
       readOnly: false,
@@ -136,7 +165,7 @@ export class EksUtilsTask extends Construct {
     //   condition: ecs.ContainerDependencyCondition.START,
     // });
 
-    taskDefinition.addToExecutionRolePolicy(
+    task.addToExecutionRolePolicy(
       new PolicyStatement({
         actions: ['elasticfilesystem:ClientMount', 'elasticfilesystem:ClientWrite'],
         resources: [
@@ -147,42 +176,59 @@ export class EksUtilsTask extends Construct {
             resourceName: fs.fileSystemId,
           }),
         ],
-      })
+      }),
     );
 
     /*
-** we shoudls also used
+    ** we shoulds also used
     const svc = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'NginxService', {
       taskDefinition: task,
       cluster,
       platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
     });
     */
-    const eksutilsService = new FargateService(this, 'EksUtilsService', {
+    const service = new FargateService(this, props.name + 'Service', {
       cluster,
-      taskDefinition,
+      //serviceName: props.name, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+      taskDefinition: task,
       platformVersion: FargatePlatformVersion.VERSION1_4,
+      enableExecuteCommand: true,
     });
 
-    this._configureTaskRole(cluster, eksutilsService, taskDefinition);
+    //this._configureTaskRole(props, cluster, service, task);
 
     /**
      * create ALB
      */
-    const alb = new ApplicationLoadBalancer(this, 'eksutilsALB', { vpc, internetFacing: true });
-
-    // Eksutils listener on 80
-    const eksutilsListener = new ApplicationListener(this, 'EksUtilsListener', {
-      loadBalancer: alb,
-      //defaultTargetGroups: [service.tar],
-      port: 80,
+    const alb = new ApplicationLoadBalancer(this, props.name + 'ALB', {
+      vpc,
+      internetFacing: true,
+      loadBalancerName: 'ecs-' + clusterProps.clusterName + '-' + props.name,
     });
 
-    eksutilsListener.addTargets('eksUtilsTargets', {
-      port: 80,
+    // Eksutils listener on 80
+    const listener = alb.addListener(props.name + 'Listener', { port: 443 });
+    const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
+      parameterName: 'CertificateArn-' + clusterProps.domainZone,
+    }).stringValue;
+    //const certificate = Certificate.fromCertificateArn(this, 'Cert', certificateArn);
+    const certificate = ListenerCertificate.fromArn(certificateArn);
+
+    const domainZone = HostedZone.fromLookup(this, props.name + 'Zone', { domainName: clusterProps.domainZone });
+    listener.addCertificates(props.name + 'cert', [certificate]);
+    const record = new ARecord(this, props.name + 'AliasRecord', {
+      zone: domainZone,
+      recordName: props.name + '.' + clusterProps.domainZone,
+      target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
+    });
+    record.domainName;
+    new CfnOutput(this, props.name + 'URL', { value: 'https://' + record.domainName });
+
+    listener.addTargets(props.name + 'Targets', {
+      port: 8080,
       targets: [
-        eksutilsService.loadBalancerTarget({
-          containerName: 'eksutils',
+        service.loadBalancerTarget({
+          containerName: props.name,
           containerPort: 8080,
         }),
       ],
@@ -197,104 +243,101 @@ export class EksUtilsTask extends Construct {
     });
 
     // allow all traffic from ALB to service
-    eksutilsService.connections.allowFrom(alb, Port.allTraffic());
+    service.connections.allowFrom(alb, Port.allTraffic());
     // allow connection between efs filesystem
-    eksutilsService.connections.allowFrom(fs, Port.tcp(2049));
-    eksutilsService.connections.allowTo(fs, Port.tcp(2049));
+    service.connections.allowFrom(fs, Port.tcp(2049));
+    service.connections.allowTo(fs, Port.tcp(2049));
 
-    new CfnOutput(this, 'eksUtilsURL', {
-      value: `http://${alb.loadBalancerDnsName}`,
+    // new CfnOutput(this, props.name + 'URL', {
+    //   value: `http://${alb.loadBalancerDnsName}`,
+    // });
+    new CfnOutput(stack, 'EcsExecCommandEksUtils', {
+      value: `ecs_exec_service ${cluster.clusterName} ${service.serviceName} ${task.defaultContainer?.containerName}`,
     });
   }
 
-  private _configureTaskRole(cluster: ICluster, eksutilsService: FargateService, taskDefinition: TaskDefinition) {
-    const stack = Stack.of(this);
+  // private _configureTaskRole(
+  //   props: ServiceTaskProps,
+  //   cluster: ICluster,
+  //   service: FargateService,
+  //   taskDefinition: TaskDefinition,
+  // ) {
+  //   const stack = Stack.of(this);
 
-    // create kms key
-    const kmsKey = new Key(this, 'KmsKey');
-    // create log group
-    const logGroup = new LogGroup(this, 'LogGroup');
-    // ecs exec bucket
-    const execBucket = new Bucket(this, 'EcsExecBucket', {
-      removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-    });
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     actions: [
+  //   //       'ssmmessages:CreateControlChannel',
+  //   //       'ssmmessages:CreateDataChannel',
+  //   //       'ssmmessages:OpenControlChannel',
+  //   //       'ssmmessages:OpenDataChannel',
+  //   //     ],
+  //   //     resources: ['*'],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['logs:DescribeLogGroups'],
+  //   //     resources: ['*'],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents'],
+  //   //     resources: [props.execLogGroup.logGroupArn],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['s3:GetBucketLocation'],
+  //   //     resources: ['*'],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['s3:GetEncryptionConfiguration'],
+  //   //     resources: [props.execBucket.bucketArn],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['s3:PutObject'],
+  //   //     resources: [props.execBucket.bucketArn],
+  //   //   }),
+  //   // );
+  //   // taskDefinition.addToTaskRolePolicy(
+  //   //   new PolicyStatement({
+  //   //     effect: Effect.ALLOW,
+  //   //     actions: ['kms:Decrypt'],
+  //   //     resources: [props.kmsKey.keyArn],
+  //   //   }),
+  //   // );
 
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        actions: [
-          'ssmmessages:CreateControlChannel',
-          'ssmmessages:CreateDataChannel',
-          'ssmmessages:OpenControlChannel',
-          'ssmmessages:OpenDataChannel',
-        ],
-        resources: ['*'],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['logs:DescribeLogGroups'],
-        resources: ['*'],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents'],
-        resources: [logGroup.logGroupArn],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:GetBucketLocation'],
-        resources: ['*'],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:GetEncryptionConfiguration'],
-        resources: [execBucket.bucketArn],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:PutObject'],
-        resources: [execBucket.bucketArn],
-      })
-    );
-    taskDefinition.addToTaskRolePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['kms:Decrypt'],
-        resources: [kmsKey.keyArn],
-      })
-    );
+  //   // we need ExecuteCommandConfiguration
+  //   // const cfnCluster = cluster.node.defaultChild as CfnCluster;
+  //   // cfnCluster.addPropertyOverride('Configuration.ExecuteCommandConfiguration', {
+  //   //   KmsKeyId: props.kmsKey.keyId,
+  //   //   LogConfiguration: {
+  //   //     CloudWatchLogGroupName: props.execLogGroup.logGroupName,
+  //   //     CloudWatchEncryptionEnabled: true,
+  //   //     S3BucketName: props.execBucket.bucketName,
+  //   //     S3KeyPrefix: 'exec-output',
+  //   //   },
+  //   //   Logging: 'OVERRIDE',
+  //   // });
+  //   // enable EnableExecuteCommand for the service
+  //   // const cfnService = service.node.findChild('Service') as CfnService;
+  //   // cfnService.addPropertyOverride('EnableExecuteCommand', true);
 
-    // we need ExecuteCommandConfiguration
-    const cfnCluster = cluster.node.defaultChild as CfnCluster;
-    cfnCluster.addPropertyOverride('Configuration.ExecuteCommandConfiguration', {
-      KmsKeyId: kmsKey.keyId,
-      LogConfiguration: {
-        CloudWatchLogGroupName: logGroup.logGroupName,
-        CloudWatchEncryptionEnabled: true,
-        S3BucketName: execBucket.bucketName,
-        S3KeyPrefix: 'exec-output',
-      },
-      Logging: 'OVERRIDE',
-    });
-    // enable EnableExecuteCommand for the service
-    const cfnService = eksutilsService.node.findChild('Service') as CfnService;
-    cfnService.addPropertyOverride('EnableExecuteCommand', true);
-
-    new CfnOutput(stack, 'EcsExecBucket', { value: execBucket.bucketName });
-    new CfnOutput(stack, 'EcsExecCommand', {
-      value: `ecs_exec_service ${cluster.clusterName} ${eksutilsService.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
-    });
-  }
+  //   new CfnOutput(stack, 'EcsExecCommand', {
+  //     value: `ecs_exec_service ${cluster.clusterName} ${service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
+  //   });
+  // }
 
   private _createEfsFilesystem(): IFileSystem {
     return new FileSystem(this, 'efs', {

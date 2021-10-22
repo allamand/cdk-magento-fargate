@@ -10,10 +10,12 @@ function ecs_exec_service() {
 
 # ecs_exec_task CLUSTER TASK CONTAINER
 function ecs_exec_task() {
+  set -x
   aws ecs execute-command  \
       --cluster $1 \
       --task $2 \
       --container $3 \
       --command "/bin/bash" \
       --interactive
+  set +x
 }

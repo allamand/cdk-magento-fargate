@@ -18,6 +18,7 @@ const project = new AwsCdkTypeScriptApp({
     '@aws-cdk/aws-efs',
     '@aws-cdk/aws-kms',
     '@aws-cdk/aws-s3',
+    '@aws-cdk/aws-opensearchservice',
     '@aws-cdk-containers/ecs-service-extensions',
     '@aws-cdk/aws-iam',
     '@aws-cdk/aws-elasticloadbalancingv2',
