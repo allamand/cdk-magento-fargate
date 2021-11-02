@@ -36,8 +36,6 @@ export class MyStack extends Stack {
     const stack = Stack.of(this);
     // define resources here...
 
-
-
     //Define VPC
     var vpc = undefined;
     if (props.vpcTagName) {
@@ -268,7 +266,10 @@ export class MyStack extends Stack {
     const certificate = ListenerCertificate.fromArn(certificateArn);
 
     //github.com/aws/aws-cdk/tree/master/packages/%40aws-cdk/aws-ecs
-    const taskDefinition = new FargateTaskDefinition(this, 'TaskDef');
+    const taskDefinition = new FargateTaskDefinition(this, 'TaskDef', {
+      cpu: 4096,
+      memoryLimitMiB: 30720
+    });
 
     //Create Load Balancer
     const lb = new ApplicationLoadBalancer(this, 'ALB', {
@@ -278,7 +279,7 @@ export class MyStack extends Stack {
     });
     const listener = lb.addListener('Listener', { port: 443 });
     listener.addCertificates('cert', [certificate]);
-    
+
     const domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: props.domainZone });
     const record = new ARecord(this, 'AliasRecord', {
       zone: domainZone,
@@ -286,16 +287,17 @@ export class MyStack extends Stack {
       target: RecordTarget.fromAlias(new LoadBalancerTarget(lb)),
     });
     record.domainName;
-    new CfnOutput(this, 'magentoURL', { value: "https://"+record.domainName });
+    new CfnOutput(this, 'magentoURL', { value: 'https://' + record.domainName });
 
     const container = taskDefinition.addContainer('magento', {
-      image: ContainerImage.fromRegistry('docker.io/bitnami/magento:2'),
+      image: ContainerImage.fromRegistry('docker.io/allamand/magento:esfix'),
+      //image: ContainerImage.fromRegistry('docker.io/bitnami/magento:2'),
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       //executionRole: arn:aws:iam::382076407153:role/ecsTaskExecutionRole
       //taskRole:
       environment: {
-        BITNAMI_DEBUG: 'yes',
-        MAGENTO_HOST: lb.loadBalancerDnsName,
+        BITNAMI_DEBUG: 'true',
+        MAGENTO_HOST: record.domainName,
         MAGENTO_DATABASE_HOST: db.clusterEndpoint.hostname,
         MAGENTO_DATABASE_PORT_NUMBER: '3306',
         MAGENTO_DATABASE_USER: DB_USER,
@@ -307,8 +309,8 @@ export class MyStack extends Stack {
         MAGENTO_ELASTICSEARCH_USER: 'magento',
         MAGENTO_ELASTICSEARCH_PASSWORD: masterUserPassword!.toString(),
       },
-      memoryReservationMiB: 256,
-      cpu: 256,
+      // memoryReservationMiB: 30720,
+      // cpu: 4096,
     });
     container.addPortMappings({
       containerPort: 8080,
@@ -380,7 +382,7 @@ export class MyStack extends Stack {
     targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
     targetGroup.configureHealthCheck({
       interval: Duration.seconds(125),
-      healthyHttpCodes: '200',
+      healthyHttpCodes: '200,302',
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 10,
       timeout: Duration.seconds(120),

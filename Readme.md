@@ -98,11 +98,13 @@ npx cdk deploy
 # Troubleshoot magento
 
 uses the script to exec into the task
+
 ```
-ecs_exec_service magento magento-magentoService27FB24D3-VIUJrhZwrS2S magento 
+ecs_exec_service magento magento-magentoService27FB24D3-VIUJrhZwrS2S magento
 ```
 
 debug commands
+
 ```
 apt-get update && apt-get install -y vim
 set -o xtrace
@@ -114,16 +116,13 @@ magento execute this script at startup : `/bin/bash /opt/bitnami/scripts/magento
 
 ## Mysql
 
-
 ensure_dir_exists /bitnami/magento
 configure_permissions_ownership /bitnami/magento -d 775 -f 664 -u daemon -g root
 magento_wait_for_db_connection $MAGENTO_DATABASE_HOST 3306 magento magentouser 'Passw0rd!'
 
 mysql -h $MAGENTO_DATABASE_HOST -u $MAGENTO_DATABASE_USER -p$MAGENTO_DATABASE_PASSWORD $MAGENTO_DATABASE_NAME
 
-
 ## Elasticsearch
-
 
 The command executed in magento by the setup.sh script:
 
@@ -132,7 +131,8 @@ debug_execute wait-for-port --timeout 5 --host $ELASTICSEARCH_HOST 443
 gosu daemon php /opt/bitnami/magento/bin/magento setup:install --no-interaction --backend-frontname admin --db-host $MAGENTO_DATABASE_HOST:3306 --db-name magento --db-user magentouser --db-password 'Passw0rd!' --search-engine elasticsearch7 --admin-firstname FirstName --admin-lastname LastName --admin-email user@example.com --admin-user user --admin-password bitnami1 --elasticsearch-host https://$ELASTICSEARCH_HOST --elasticsearch-port 443 --elasticsearch-enable-auth 1 --elasticsearch-username magento --elasticsearch-password Passw0rd!
 ```
 
-You can test the elasticsearch connection in curl with 
+You can test the elasticsearch connection in curl with
+
 ```
 curl -XPOST -u "$MAGENTO_ELASTICSEARCH_USER:$MAGENTO_ELASTICSEARCH_PASSWORD" "https://$ELASTICSEARCH_HOST/_search" -H "content-type:application/json" -d'
 {
@@ -146,8 +146,8 @@ curl -XPOST -u "$MAGENTO_ELASTICSEARCH_USER:$MAGENTO_ELASTICSEARCH_PASSWORD" "ht
 curl -XPOST https://$ELASTICSEARCH_HOST/_plugin/kibana/auth/login -H "osd-xsrf: true" -H "content-type:application/json" -d '{"username":"$MAGENTO_ELASTICSEARCH_USER", "password" : "$MAGENTO_ELASTICSEARCH_PASSWORD"}' -c auth.txt
 ```
 
-
 Add role to elasticsearch
+
 ```
 curl -sS -u "${MAGENTO_ELASTICSEARCH_USER}:${MAGENTO_ELASTICSEARCH_PASSWORD}" \
  -X PATCH \
@@ -161,8 +161,6 @@ curl -sS -u "${MAGENTO_ELASTICSEARCH_USER}:${MAGENTO_ELASTICSEARCH_PASSWORD}" \
 ]
 '
 ```
-
-
 
 # Test with python
 
@@ -185,7 +183,7 @@ credentials.secret_key,
 session.region_name, 'es',
 session_token=credentials.token)
 es = Elasticsearch(
-['search-magento-cdk-wjzbwwvaehqfttwyfuf5cztw2i.eu-west-1.es.amazonaws.com'],
+['search-xxx.es.amazonaws.com'],
 http_auth=awsauth,
 use_ssl=True,
 verify_certs=True,
@@ -208,7 +206,7 @@ credentials = boto3.Session().get_credentials()
 service = 'es'
 region = 'eu-west-1'
 
-url="https://search-magento-cdk-wjzbwwvaehqfttwyfuf5cztw2i.eu-west-1.es.amazonaws.com"
+url="https://search-magento-xxx.es.amazonaws.com"
 
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
 
@@ -216,5 +214,3 @@ r=requests.get(url, auth=awsauth)
 print(r.text)
 EOF
 ```
-
-
