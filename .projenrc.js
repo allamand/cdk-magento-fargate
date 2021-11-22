@@ -1,8 +1,8 @@
 const { AwsCdkTypeScriptApp } = require('projen');
 const project = new AwsCdkTypeScriptApp({
-  cdkVersion: '1.124.0',
+  cdkVersion: '1.132.0',
   defaultReleaseBranch: 'main',
-  name: 'ecs-capacityproviders',
+  name: 'cdk-magento-fargate',
 
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
@@ -24,6 +24,7 @@ const project = new AwsCdkTypeScriptApp({
     '@aws-cdk/aws-elasticloadbalancingv2',
     '@aws-cdk/aws-servicediscovery',
     '@aws-cdk/aws-route53-targets',
+    '@aws-cdk/aws-secretsmanager',
   ],
 
   cdkTestDependencies: ['@aws-cdk/assert'],
@@ -34,6 +35,23 @@ const project = new AwsCdkTypeScriptApp({
   autoApproveOptions: {
     secret: 'GITHUB_TOKEN',
     allowedUsernames: ['github-actions', 'github-actions[bot]', 'allamand'],
+  },
+
+  context: {
+    vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
+    es_domain: 'magento-cdk2',
+    es_key_nme: 'magentokey',
+    es_domain_name: 'magento2',
+    es_master_user_name: 'magento-es',
+    es_master_user_password: 'P@sswordPlay78', // The master user password must contain at least one uppercase letter, one lowercase letter, one number, and one special character
+    db_name: 'magento2',
+    db_user: 'magentodbuser',
+    db_password: 'MySuperPassword', // Only printable ASCII characters besides '/', '@', '"', ' ' may be used
+    route53_domain_zone: 'ecs.demo3.allamand.com',
+    route53_magento_prefix: 'magento2',
+    route53_eksutils_prefix: 'eksutils2',
+    magento_user: 'user1',
+    magento_password: 'magento_password',
   },
 
   //releaseEveryCommit: true,

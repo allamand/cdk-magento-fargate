@@ -19,7 +19,7 @@
     },
     {
       "name": "aws-cdk",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "build"
     },
     {
@@ -75,102 +75,107 @@
     },
     {
       "name": "@aws-cdk-containers/ecs-service-extensions",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/assert",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-certificatemanager",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-ec2",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-ecr",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-ecs-patterns",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-ecs",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-efs",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-elasticloadbalancingv2",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-iam",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-kms",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-logs",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-opensearchservice",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-rds",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-route53-targets",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-route53",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-s3",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
+      "type": "runtime"
+    },
+    {
+      "name": "@aws-cdk/aws-secretsmanager",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-servicediscovery",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/aws-ssm",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     },
     {
       "name": "@aws-cdk/core",
-      "version": "^1.124.0",
+      "version": "^1.132.0",
       "type": "runtime"
     }
   ],
