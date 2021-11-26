@@ -1,15 +1,12 @@
 import { IVpc, Port } from '@aws-cdk/aws-ec2';
 import {
   AwsLogDriver,
-  ContainerImage,
-  FargateTaskDefinition,
+  ContainerImage, FargatePlatformVersion, FargateService, FargateTaskDefinition,
   ICluster,
-  RepositoryImage,
-  FargateService,
-  FargatePlatformVersion,
+  RepositoryImage
 } from '@aws-cdk/aws-ecs';
 import { NetworkLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns';
-import { IFileSystem, FileSystem } from '@aws-cdk/aws-efs';
+import { FileSystem, IFileSystem } from '@aws-cdk/aws-efs';
 import { ApplicationLoadBalancer, ListenerCertificate } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
@@ -19,14 +16,14 @@ import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
 import { Bucket } from '@aws-cdk/aws-s3';
 import { StringParameter } from '@aws-cdk/aws-ssm';
 import { CfnOutput, Construct, Duration, RemovalPolicy, Stack } from '@aws-cdk/core';
-import { MyStackProps } from './main';
+import { MagentoStackProps } from './main';
 
 const DEFAULTS = {
   eksutilsContainer: 'public.ecr.aws/seb-demo/eksutils',
 };
 
 /**
- * construct properties for Apisix
+ * construct properties for EksUtils
  */
 export interface ServiceTaskProps {
   /**
@@ -97,7 +94,7 @@ export class EksUtilsTask extends Construct {
   readonly name: string;
   readonly cluster: ICluster;
   readonly envVar: { [key: string]: string };
-  constructor(scope: Construct, id: string, clusterProps: MyStackProps, props: ServiceTaskProps) {
+  constructor(scope: Construct, id: string, clusterProps: MagentoStackProps, props: ServiceTaskProps) {
     super(scope, id);
 
     const stack = Stack.of(this);
@@ -107,14 +104,6 @@ export class EksUtilsTask extends Construct {
     const name = this.name;
     const cluster = props.cluster!;
     this.cluster = cluster;
-
-    // const requiredContextVariables = [
-    //   'ADMIN_KEY_ADMIN',
-    //   'ADMIN_KEY_VIEWER',
-    //   'DASHBOARD_ADMIN_PASSWORD',
-    //   'DASHBOARD_USER_PASSWORD',
-    // ];
-    //    requiredContextVariables.map((v) => throwIfNotAvailable(this, v));
 
     this.envVar = {
       //ADMIN_KEY_ADMIN: stack.node.tryGetContext('ADMIN_KEY_ADMIN'),
@@ -189,7 +178,7 @@ export class EksUtilsTask extends Construct {
     */
     const service = new FargateService(this, props.name + 'Service', {
       cluster,
-      //serviceName: props.name, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+      serviceName: props.name, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
       taskDefinition: task,
       platformVersion: FargatePlatformVersion.VERSION1_4,
       enableExecuteCommand: true,
@@ -205,20 +194,23 @@ export class EksUtilsTask extends Construct {
       internetFacing: true,
       loadBalancerName: 'ecs-' + clusterProps.clusterName + '-' + props.name,
     });
-
+    const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
+    const r53EksUtilsPrefix = this.node.tryGetContext('route53_eksutils_prefix')
+      ? this.node.tryGetContext('route53_eksutils_prefix')
+      : stack.stackName + '-eksutils';
     // Eksutils listener on 80
     const listener = alb.addListener(props.name + 'Listener', { port: 443 });
     const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
-      parameterName: 'CertificateArn-' + clusterProps.domainZone,
+      parameterName: 'CertificateArn-' + r53DomainZone,
     }).stringValue;
     //const certificate = Certificate.fromCertificateArn(this, 'Cert', certificateArn);
     const certificate = ListenerCertificate.fromArn(certificateArn);
 
-    const domainZone = HostedZone.fromLookup(this, props.name + 'Zone', { domainName: clusterProps.domainZone });
+    const domainZone = HostedZone.fromLookup(this, props.name + 'Zone', { domainName: r53DomainZone });
     listener.addCertificates(props.name + 'cert', [certificate]);
     const record = new ARecord(this, props.name + 'AliasRecord', {
       zone: domainZone,
-      recordName: props.name + '.' + clusterProps.domainZone,
+      recordName: r53EksUtilsPrefix + '.' + r53DomainZone,
       target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
     });
     record.domainName;
@@ -392,16 +384,4 @@ export class EksUtilsTask extends Construct {
 //     : scope.node.tryGetContext('use_vpc_id')
 //     ? Vpc.fromLookup(scope, 'Vpc', { vpcId: scope.node.tryGetContext('use_vpc_id') })
 //     : new Vpc(scope, 'Vpc', { maxAzs: 3, natGateways: 1 });
-// }
-
-// function isContextAvailable(scope: Construct, key: string) {
-//   return Stack.of(scope).node.tryGetContext(key);
-// }
-/**
- * Throws if the context is not available
- */
-// function throwIfNotAvailable(scope: Construct, key: string) {
-//   if (!isContextAvailable(scope, key)) {
-//     throw new Error(`${key} is required in the context variable`);
-//   }
 // }

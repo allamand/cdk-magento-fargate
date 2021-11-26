@@ -1,11 +1,11 @@
 
-diff:
+diff: projen
 	npx cdk diff
 
-synth:
+synth: projen
 	npx cdk synth	
 
-deploy:
+deploy: projen
 	npx cdk deploy --require-approval=never
 
 destroy:
@@ -16,6 +16,9 @@ describe:
 
 connect:
 	@echo $(shell aws cloudformation describe-stacks --stack-name magento --region eu-west-1 --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandMagento')].OutputValue" --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name magento --region eu-west-1 --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandEksUtils')].OutputValue" --output text)
 
+projen:
+	npx projen
 
 	

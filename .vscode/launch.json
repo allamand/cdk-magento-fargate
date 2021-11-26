@@ -1,17 +1,35 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "CDK Debugger",
-            "skipFiles": ["<node_internals>/**"],
-            "runtimeArgs": [
-                "-r",
-                "./node_modules/ts-node/register/transpile-only"
-            ],
-            // Entry point of your stack
-            "args": ["${workspaceFolder}/src/main.ts"]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "CDK Debugger",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "CDK_DEFAULT_ACCOUNT": "xxxxxxxxxxxx",
+        "CDK_DEFAULT_REGION": "eu-west-1"
+      },
+      "runtimeArgs": ["-r", "./node_modules/ts-node/register/transpile-only"],
+      // Entry point of your stack
+      "args": ["${workspaceFolder}/src/main.ts"]
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+      "args": ["--runInBand", "-c", "./tsconfig.jest.json"],
+      "preLaunchTask": "tsc: build - tsconfig.jest.json",
+      "env": {
+        "CDK_DEFAULT_ACCOUNT": "xxxxxxxxxxxx",
+        "CDK_DEFAULT_REGION": "eu-west-1"
+      },
+      "envFile": "${workspaceFolder}/.env.template",
+      "cwd": "${workspaceFolder}/",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true
+    }
+  ]
 }

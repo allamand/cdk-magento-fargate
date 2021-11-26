@@ -25,6 +25,7 @@ const project = new AwsCdkTypeScriptApp({
     '@aws-cdk/aws-servicediscovery',
     '@aws-cdk/aws-route53-targets',
     '@aws-cdk/aws-secretsmanager',
+    '@aws-cdk/cx-api',
   ],
 
   cdkTestDependencies: ['@aws-cdk/assert'],
@@ -39,25 +40,25 @@ const project = new AwsCdkTypeScriptApp({
 
   context: {
     vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
-    es_domain: 'magento-cdk2',
-    es_key_nme: 'magentokey',
-    es_domain_name: 'magento2',
-    es_master_user_name: 'magento-es',
-    es_master_user_password: 'P@sswordPlay78', // The master user password must contain at least one uppercase letter, one lowercase letter, one number, and one special character
-    db_name: 'magento2',
+    enablePrivateLink: 'false', // this parameter seems to works only one
+
+    //os_domain: 'magento-cdk4', // default to $CDK_STACK_NAME
+    os_master_user_name: 'magento-master-os',
+
+    //db_name: 'magento3', // default to env $CDK_STACK_NAME
     db_user: 'magentodbuser',
-    db_password: 'MySuperPassword', // Only printable ASCII characters besides '/', '@', '"', ' ' may be used
+
     route53_domain_zone: 'ecs.demo3.allamand.com',
-    route53_magento_prefix: 'magento2',
-    route53_eksutils_prefix: 'eksutils2',
+    //route53_magento_prefix: 'magento4', // default to $CDK_STACK_NAME
+    //route53_eksutils_prefix: 'eksutils4', // default to $CDK_STACK_NAME-eksutils
     magento_user: 'user1',
-    magento_password: 'magento_password',
+    magento_debug_task: 'yes',
   },
 
   //releaseEveryCommit: true,
   //releaseToNpm: true,
 
-  gitignore: ['cdk.out', 'cdk.context.json'],
+  gitignore: ['cdk.out', 'cdk.context.json', "*.d.ts", "*.js"],
 
   // cdkDependencies: undefined,  /* Which AWS CDK modules (those that start with "@aws-cdk/") this app uses. */
   // deps: [],                    /* Runtime dependencies of this module. */
