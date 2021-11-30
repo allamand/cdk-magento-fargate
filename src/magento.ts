@@ -15,9 +15,12 @@ import { ApplicationLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns
 import { IFileSystem } from '@aws-cdk/aws-efs';
 import { SslPolicy } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
+import { Key } from '@aws-cdk/aws-kms';
+import { LogGroup } from '@aws-cdk/aws-logs';
 import { Domain } from '@aws-cdk/aws-opensearchservice';
 import { IDatabaseCluster } from '@aws-cdk/aws-rds';
 import { HostedZone } from '@aws-cdk/aws-route53';
+import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { StringParameter } from '@aws-cdk/aws-ssm';
 import { CfnOutput, Construct, Duration, Stack } from '@aws-cdk/core';
@@ -88,6 +91,24 @@ export interface MagentoServiceProps {
    */
   readonly serviceSG: ISecurityGroup;
 
+  /**
+   * KMS Key to encrypt SSM sessions and bucket
+   * @default - public.ecr.aws/d7p2r8s3/apisix
+   */
+  readonly kmsKey: Key;
+
+  /**
+   * Bucket to store ecs exec commands
+   * @default -
+   */
+  readonly execBucket: Bucket;
+
+  /**
+   * Log group to log ecs exec commands
+   * @default - '/ecs/secu/exec/' + cluster.clusterName,
+   */
+  readonly execLogGroup: LogGroup;
+
   /*
    ** Debug specify if we cxreate a service with empty command to not start magento process and allow ecs connect in it
    ** @default false (TODO: how to set default to false ??)
@@ -123,6 +144,7 @@ export class MagentoService extends Construct {
     const domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
     this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
+    //TODO: Which combination is the best for Magento ?
     const taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
       cpu: 4096,
       memoryLimitMiB: 30720,
@@ -148,7 +170,8 @@ export class MagentoService extends Construct {
       MAGENTO_HOST: this.hostName,
       MAGENTO_ENABLE_HTTPS: 'yes',
       MAGENTO_ENABLE_ADMIN_HTTPS: 'yes',
-      MAGENTO_MODE: 'developer', //TODO: var for this
+      //MAGENTO_MODE: 'developer', //TODO: var for this
+      MAGENTO_MODE: 'production',
 
       //TODO: add HTTP Cache
 
@@ -169,30 +192,24 @@ export class MagentoService extends Construct {
       MAGENTO_ELASTICSEARCH_ENABLE_AUTH: 'yes',
       MAGENTO_ELASTICSEARCH_USER: props.osUser,
 
-      MAGENTO_ELASTICSEARCH_PASSWORD: props.osDomain.masterUserPassword!.toString(),
+      //MAGENTO_ELASTICSEARCH_PASSWORD: props.osDomain.masterUserPassword!.toString(),
       //MAGENTO_ELASTICSEARCH_PASSWORD: props.osPassword,
 
-      PHP_MEMORY_LIMIT: '8G',
+      PHP_MEMORY_LIMIT: '2G',
     };
     const magentoSecrets = {
       MAGENTO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
       MAGENTO_DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(props.dbPassword),
-      //MAGENTO_ELASTICSEARCH_PASSWORD: ecs.Secret.fromSecretsManager(props.osPassword),
+      MAGENTO_ELASTICSEARCH_PASSWORD: ecs.Secret.fromSecretsManager(props.osPassword),
     };
 
     var containerDef: ContainerDefinitionOptions = {
       containerName: 'magento',
-      image: ContainerImage.fromRegistry('public.ecr.aws/seb-demo/magento:elasticsearch-https-3'),
-      //image: ContainerImage.fromRegistry('public.ecr.aws/seb-demo/magento:chown-1'),
-      //image: ContainerImage.fromRegistry('docker.io/bitnami/magento:2'),
-      //image: ContainerImage.fromRegistry('public.ecr.aws/seb-demo/eksutils'),
-      //debug
+      image: ContainerImage.fromRegistry(props.magentoImage),
       command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,
       secrets: magentoSecrets,
-      // memoryReservationMiB: 30720,
-      // cpu: 4096,
     };
     const container = taskDefinition.addContainer('magento' + id, containerDef);
 
@@ -205,7 +222,8 @@ export class MagentoService extends Construct {
       sourceVolume: 'MagentoEfsVolume',
     });
 
-    container.addToExecutionPolicy(
+    //container.addToExecutionPolicy(
+    taskDefinition.addToExecutionRolePolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         resources: ['*'],
@@ -288,10 +306,66 @@ export class MagentoService extends Construct {
 
         healthCheckGracePeriod: Duration.minutes(60),
       });
+
+      //ApplicationLoadBalancedFargateService don't have automatic activation oc ecs exec, so that we need to manually add it and also add the policies
       //enable execute https://github.com/aws/aws-cdk/issues/15197
       const cfnService = this.service.service.node.defaultChild as ecs.CfnService;
       cfnService.enableExecuteCommand = true;
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          actions: [
+            'ssmmessages:CreateControlChannel',
+            'ssmmessages:CreateDataChannel',
+            'ssmmessages:OpenControlChannel',
+            'ssmmessages:OpenDataChannel',
+          ],
+          resources: ['*'],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['logs:DescribeLogGroups'],
+          resources: ['*'],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents'],
+          resources: [props.execLogGroup.logGroupArn],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['s3:GetBucketLocation'],
+          resources: ['*'],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['s3:GetEncryptionConfiguration'],
+          resources: [props.execBucket.bucketArn],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['s3:PutObject'],
+          resources: [props.execBucket.bucketArn],
+        }),
+      );
+      this.service.taskDefinition.addToTaskRolePolicy(
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['kms:Decrypt', 'kms:GenerateDataKey'],
+          resources: [props.kmsKey.keyArn],
+        }),
+      );
 
+      //Load Balancer configuration
       this.service.targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
       this.service.targetGroup.configureHealthCheck({
         interval: Duration.seconds(60),
@@ -303,7 +377,7 @@ export class MagentoService extends Construct {
       });
 
       const scalableTarget = this.service.service.autoScaleTaskCount({
-        minCapacity: 2,
+        minCapacity: 1,
         maxCapacity: 50,
       });
 

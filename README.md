@@ -1,6 +1,5 @@
 # Magento deployment on AWS using ECS/Fargate, RDS, OpenSearch, and EFS deployed with CDK
 
-
 The goal of this project is to deploy ECS service with Autoscaling, and relying on a ECS cluster using Capacity Providers with an AutoScaling Group.
 
 ## The project is Bootstrap with projen
@@ -27,6 +26,7 @@ npx projen
 ```
 
 I personally create an alias to launch projen
+
 ```bash
 alias pj='npx projen'
 ```
@@ -34,7 +34,6 @@ alias pj='npx projen'
 ```bash
 pj build
 ```
-
 
 ### Install project dependencies.
 
@@ -48,12 +47,12 @@ exemple:
     '@aws-cdk/aws-ec2',
     '@aws-cdk/aws-ecr',
 ```
+
 then execute pj to install thems
 
 ```bash
 pj
 ```
-
 
 ### Project Configuration
 
@@ -129,8 +128,29 @@ Deploy the stack into your AWS account
 make deploy
 ```
 
-
 ## TroubleShoot and debug
+
+### Exec into the task
+
+ECS allows you to exec into a task to have a shell inside your container.
+The stack correctly configure the tasks so that you can securely connect inside.
+
+The cloudfomation stack show you some command so that you can directly use to exec inside your tasks.
+
+the Makefile can also show you theses commands
+
+```bash
+make connect
+```
+
+this exports a commant that use a helper function that you can put in your PATH or si;ply source
+
+```bash
+source source src/helper.sh
+ecs_exec_service magento MagentoServiceDebug magento
+```
+
+In case of errors during the connection you still can uses [ecs-exec-checker](https://github.com/aws-containers/amazon-ecs-exec-checker) tool to figure out where is the proble;
 
 ### Connect to the Magento Debug Task
 
@@ -150,12 +170,12 @@ If the Task didn't start properly, you can exec into the debug pod and manually 
 
 ```
 In SearchConfig.php line 81:
-                                                                               
-  Could not validate a connection to Elasticsearch. Could not parse URI: "htt  
-  ps://magento-master-os:beavqpdh.Kzm4?6WqtJHv4e0Lj3AioyI@search-magento-zwa5  
-  v3x4br3kgn4y5e5nu6hv7q.eu-west-1.es.amazonaws.com:443"                       
-                                                                           
-```   
+
+  Could not validate a connection to Elasticsearch. Could not parse URI: "htt
+  ps://magento-master-os:beavqpdh.Kzm4?6WqtJHv4e0Lj3AioyI@search-magento-zwa5
+  v3x4br3kgn4y5e5nu6hv7q.eu-west-1.es.amazonaws.com:443"
+
+```
 
 ### Install magento demo content
 
@@ -177,7 +197,6 @@ php -d memory_limit=-1 bin/magento sampledata:deploy
 
 #php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
 
-
 composer diagnose
 composer self-update
 
@@ -192,7 +211,6 @@ vi bitnami/magento/composer.json
 ### Set developper mode
 
 php bin/magento deploy:mode:set developer
-
 
 # Troubleshoot magento
 
@@ -268,21 +286,17 @@ The stack is configured to delete the database cluster and openshift cluster, an
       encrypted: true,
       removalPolicy: RemovalPolicy.DESTROY,// <-- you can change this -->
     });
-```    
-
+```
 
 While we can't delete an ECS Capacity Provider when associated Autoscaling Group still exists, the first attempt to delete the stack may finished in a `DELETE_FAILED` state. A second delete atempt should properly delete everything.d
-
-
-
 
 ---
 
 The Content-Security-Policy directive 'frame-ancestors' does not support the source expression ''unsafe-inline''
 
-Mixed Content: The page at 'https://magento3.ecs.demo3.allamand.com/admin/admin/index/index/key/25061c9f3a88213de8fa7522c1320ac57fb2ee8127e5779b83468dd2ce2f477d/' was loaded over HTTPS, but requested an insecure element 'http://magento3.ecs.demo3.allamand.com/static/version1638212881/adminhtml/Magento/backend/en_US/images/magento-logo.svg'. This request was automatically 
+Mixed Content: The page at 'https://magento3.ecs.demo3.allamand.com/admin/admin/index/index/key/25061c9f3a88213de8fa7522c1320ac57fb2ee8127e5779b83468dd2ce2f477d/' was loaded over HTTPS, but requested an insecure element 'http://magento3.ecs.demo3.allamand.com/static/version1638212881/adminhtml/Magento/backend/en_US/images/magento-logo.svg'. This request was automatically
 
-5[Report Only] Refused to load the image '<URL>' because it violates the following Content Security Policy directive: "img-src assets.adobedtm.com amcglobal.sc.omtrdc.net dpm.demdex.net cm.everesttech.net *.adobe.com widgets.magentocommerce.com data: <URL> <URL> <URL> t.paypal.com *.ftcdn.net *.behance.net <URL> fpdbs.paypal.com fpdbs.sandbox.paypal.com *.vimeocdn.com i.ytimg.com d3sbl0c71oxeok.cloudfront.net dhkkzdfmpzvap.cloudfront.net d2bpzs5y44q6e0.cloudfront.net d37shgu97oizpd.cloudfront.net d1zlqll3enr74n.cloudfront.net d1jynp0fpwn93a.cloudfront.net d2cb3tokgpwh3v.cloudfront.net d1re8bfxx3pw6e.cloudfront.net d35u8xwkxs8vpe.cloudfront.net d13s9xffygp5o.cloudfront.net d388nbw0dwi1jm.cloudfront.net d11p2vtu3dppaw.cloudfront.net d3r89hiip86hka.cloudfront.net dc7snq0c8ipyk.cloudfront.net d5c7kvljggzso.cloudfront.net d2h8yg3ypfzua1.cloudfront.net d1b556x7apj5fb.cloudfront.net draz1ib3z71v2.cloudfront.net dr6hdp4s5yzfc.cloudfront.net d2bomicxw8p7ii.cloudfront.net d3aypcdgvjnnam.cloudfront.net d2a3iuf10348gy.cloudfront.net *.ssl-images-amazon.com *.ssl-images-amazon.co.uk *.ssl-images-amazon.co.jp *.ssl-images-amazon.jp *.ssl-images-amazon.it *.ssl-images-amazon.fr *.ssl-images-amazon.es *.ssl-images-amazon.de *.media-amazon.com *.media-amazon.co.uk *.media-amazon.co.jp *.media-amazon.jp *.media-amazon.it *.media-amazon.fr *.media-amazon.es *.media-amazon.de <URL> b.stats.paypal.com dub.stats.paypal.com assets.braintreegateway.com c.paypal.com checkout.paypal.com *.yotpo.com *.aptrinsic.com storage.googleapis.com data: 'self' 'unsafe-inline'".
+5[Report Only] Refused to load the image '<URL>' because it violates the following Content Security Policy directive: "img-src assets.adobedtm.com amcglobal.sc.omtrdc.net dpm.demdex.net cm.everesttech.net _.adobe.com widgets.magentocommerce.com data: <URL> <URL> <URL> t.paypal.com _.ftcdn.net _.behance.net <URL> fpdbs.paypal.com fpdbs.sandbox.paypal.com _.vimeocdn.com i.ytimg.com d3sbl0c71oxeok.cloudfront.net dhkkzdfmpzvap.cloudfront.net d2bpzs5y44q6e0.cloudfront.net d37shgu97oizpd.cloudfront.net d1zlqll3enr74n.cloudfront.net d1jynp0fpwn93a.cloudfront.net d2cb3tokgpwh3v.cloudfront.net d1re8bfxx3pw6e.cloudfront.net d35u8xwkxs8vpe.cloudfront.net d13s9xffygp5o.cloudfront.net d388nbw0dwi1jm.cloudfront.net d11p2vtu3dppaw.cloudfront.net d3r89hiip86hka.cloudfront.net dc7snq0c8ipyk.cloudfront.net d5c7kvljggzso.cloudfront.net d2h8yg3ypfzua1.cloudfront.net d1b556x7apj5fb.cloudfront.net draz1ib3z71v2.cloudfront.net dr6hdp4s5yzfc.cloudfront.net d2bomicxw8p7ii.cloudfront.net d3aypcdgvjnnam.cloudfront.net d2a3iuf10348gy.cloudfront.net _.ssl-images-amazon.com _.ssl-images-amazon.co.uk _.ssl-images-amazon.co.jp _.ssl-images-amazon.jp _.ssl-images-amazon.it _.ssl-images-amazon.fr _.ssl-images-amazon.es _.ssl-images-amazon.de _.media-amazon.com _.media-amazon.co.uk _.media-amazon.co.jp _.media-amazon.jp _.media-amazon.it _.media-amazon.fr _.media-amazon.es _.media-amazon.de <URL> b.stats.paypal.com dub.stats.paypal.com assets.braintreegateway.com c.paypal.com checkout.paypal.com _.yotpo.com _.aptrinsic.com storage.googleapis.com data: 'self' 'unsafe-inline'".
 
 https://magento.stackexchange.com/questions/311788/magento-2-3-5-content-security-policy-directive-img-src
 

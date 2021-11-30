@@ -57,7 +57,7 @@ export interface ServiceTaskProps {
   readonly serviceContainer?: ContainerImage;
 
   /**
-   * cKMS Key to encrypt SSM sessions and bucket
+   * KMS Key to encrypt SSM sessions and bucket
    * @default - public.ecr.aws/d7p2r8s3/apisix
    */
   readonly kmsKey: Key;

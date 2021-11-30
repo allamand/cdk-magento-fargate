@@ -1,4 +1,8 @@
 
+CDK_STACK_NAME?=magento
+
+stack:
+	echo $(CDK_STACK_NAME)
 diff: projen
 	npx cdk diff
 
@@ -12,11 +16,11 @@ destroy:
 	npx cdk destroy
 
 describe:
-	aws cloudformation describe-stacks --stack-name magento --region eu-west-1 --query "Stacks[*].Outputs" --output table 
+	aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs" --output table 
 
 connect:
-	@echo $(shell aws cloudformation describe-stacks --stack-name magento --region eu-west-1 --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandMagento')].OutputValue" --output text)
-	@echo $(shell aws cloudformation describe-stacks --stack-name magento --region eu-west-1 --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandEksUtils')].OutputValue" --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandMagentoService')].OutputValue" --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandEksUtils')].OutputValue" --output text)
 
 projen:
 	npx projen

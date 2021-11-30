@@ -1,7 +1,6 @@
 import { InterfaceVpcEndpointAwsService, Peer, Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
 import { Cluster, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
 import { FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
-import { Effect, Policy, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
 import * as opensearch from '@aws-cdk/aws-opensearchservice';
@@ -361,7 +360,7 @@ export class MagentoStack extends Stack {
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone
      */
     const magentoImage = 'public.ecr.aws/seb-demo/magento:elasticsearch-https-3';
-    const magentoService = new MagentoService(this, 'MagentoService', {
+    new MagentoService(this, 'MagentoService', {
       cluster: cluster!,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
@@ -374,25 +373,28 @@ export class MagentoStack extends Stack {
       osUser: OS_MASTER_USER_NAME,
       osPassword: magentoOpensearchAdminPassword,
       //osPassword: OS_MASTER_USER_PASSWORD,
+      kmsKey: kmsKey,
+      execBucket: execBucket,
+      execLogGroup: execLogGroup,
       serviceSG: serviceSG,
     });
-    const service = magentoService.getService();
+    //const service = magentoService.getService();
 
     //allow to communicate with OpenSearch
     openSearchSG.addIngressRule(serviceSG, Port.allTraffic(), 'allow traffic fom ECS service');
     serviceSG.addIngressRule(openSearchSG, Port.allTraffic(), 'allow traffic fom Opensearch');
 
-    var policyStatement = new PolicyStatement({
-      effect: Effect.ALLOW,
-      resources: ['*'],
-      actions: ['ecs:ListTasks', 'ecs:DescribeTasks'],
-    });
+    // var policyStatement = new PolicyStatement({
+    //   effect: Effect.ALLOW,
+    //   resources: ['*'],
+    //   actions: ['ecs:ListTasks', 'ecs:DescribeTasks'],
+    // });
 
-    service.taskDefinition.taskRole.attachInlinePolicy(
-      new Policy(this, 'policy', {
-        statements: [policyStatement],
-      }),
-    );
+    // service.taskDefinition.taskRole.attachInlinePolicy(
+    //   new Policy(this, 'policy', {
+    //     statements: [policyStatement],
+    //   }),
+    // );
 
     // Add Debug Task
     const magentoDebugTask = this.node.tryGetContext('magento_debug_task');
@@ -411,6 +413,9 @@ export class MagentoStack extends Stack {
         osPassword: magentoOpensearchAdminPassword,
         //osPassword: OS_MASTER_USER_PASSWORD,
         serviceSG: serviceSG,
+        kmsKey: kmsKey,
+        execBucket: execBucket,
+        execLogGroup: execLogGroup,
         debug: true,
       });
     }
