@@ -143,9 +143,15 @@ export class MagentoService extends Construct {
 
     const magentoEnvs: { [key: string]: string } = {
       BITNAMI_DEBUG: 'true',
-      MAGENTO_USER: magentoUser,
+      MAGENTO_USERNAME: magentoUser,
       MAGENTO_DEPLOY_STATIC_CONTENT: 'yes',
       MAGENTO_HOST: this.hostName,
+      MAGENTO_ENABLE_HTTPS: 'yes',
+      MAGENTO_ENABLE_ADMIN_HTTPS: 'yes',
+      MAGENTO_MODE: 'developer', //TODO: var for this
+
+      //TODO: add HTTP Cache
+
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
       MAGENTO_DATABASE_USER: props.dbUser,
@@ -296,29 +302,30 @@ export class MagentoService extends Construct {
         path: '/',
       });
 
-      //TODO: reactivate autoscaling when done
+      const scalableTarget = this.service.service.autoScaleTaskCount({
+        minCapacity: 2,
+        maxCapacity: 50,
+      });
 
-      //  const scalableTarget = this.service.service.autoScaleTaskCount({
-      //    minCapacity: 5,
-      //    maxCapacity: 20,
-      //  });
+      scalableTarget.scaleOnCpuUtilization('CpuScaling', {
+        targetUtilizationPercent: 50,
+      });
 
-      //  scalableTarget.scaleOnCpuUtilization('CpuScaling', {
-      //    targetUtilizationPercent: 50,
-      //  });
+      scalableTarget.scaleOnRequestCount('RequestScaling', {
+        requestsPerTarget: 10000,
+        targetGroup: this.service.targetGroup,
+      });
 
-      //  scalableTarget.scaleOnRequestCount('RequestScaling', {
-      //    requestsPerTarget: 10000,
-      //    targetGroup: this.service.targetGroup,
-      //  });
+      //TODO : Scalable target on schedule
+      //Invalid schedule expression. Details: Schedule expressions must have the following syntax: rate(<number>\s?(minutes?|hours?|days?)), cron(<cron_expression>) or at(yyyy-MM-dd'T'HH:mm:ss). (Service: AWSApplicationAutoScaling;
 
       // scalableTarget.scaleOnSchedule('DaytimeScaleDown', {
-      //   schedule: Schedule.cron({ hour: '8', minute: '0' }),
+      //   schedule: Schedule.cron({ hour: '19', minute: '0' }),
       //   minCapacity: 1,
       // });
 
       // scalableTarget.scaleOnSchedule('EveningRushScaleUp', {
-      //   schedule: appscaling.Schedule.cron({ hour: '20', minute: '0' }),
+      //   schedule: Schedule.cron({ hour: '8', minute: '0' }),
       //   minCapacity: 10,
       // });
 

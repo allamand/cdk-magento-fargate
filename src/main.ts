@@ -8,7 +8,7 @@ import * as opensearch from '@aws-cdk/aws-opensearchservice';
 import { Credentials, DatabaseCluster, DatabaseClusterEngine } from '@aws-cdk/aws-rds';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { App, CfnOutput, Construct, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
+import { App, CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import { EksUtilsTask } from './eksutils';
 import { MagentoService } from './magento';
@@ -94,15 +94,14 @@ export class MagentoStack extends Stack {
     new CfnOutput(stack, 'MagentoAdminPasswordOutput', { value: magentoPassword.toString() });
 
     /* The master user password must
-contain at least one uppercase letter, one lowercase letter, one number, and one special ch
-aracter.
-*/
+     * contain at least one uppercase letter, one lowercase letter, one number, and one special character.
+     */
     const magentoOpensearchAdminPassword = new secretsmanager.Secret(this, 'opensearchAdminPassword', {
       secretName: id + '-magento-opensearch-admin-password',
       description: 'magento Opensearch Admin password for ' + stackName,
       encryptionKey: kmsKey,
       generateSecretString: {
-        excludeCharacters: '|-,\'":@/<>;()[]{}/&`?',
+        excludeCharacters: '|-,\'":@/<>;()[]{}/&`%#?!',
         includeSpace: false,
         excludePunctuation: false,
       },
@@ -311,7 +310,8 @@ aracter.
       securityGroup: efsFileSystemSecurityGroup,
       performanceMode: PerformanceMode.GENERAL_PURPOSE,
       lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
-      throughputMode: ThroughputMode.BURSTING,
+      throughputMode: ThroughputMode.PROVISIONED,
+      provisionedThroughputPerSecond: Size.mebibytes(1024),
       encrypted: true,
       removalPolicy: RemovalPolicy.DESTROY, //props.removalPolicy,
     });

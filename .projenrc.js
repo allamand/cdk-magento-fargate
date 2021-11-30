@@ -10,6 +10,7 @@ const project = new AwsCdkTypeScriptApp({
     '@aws-cdk/aws-ecr',
     '@aws-cdk/aws-ecs',
     '@aws-cdk/aws-ecs-patterns',
+    '@aws-cdk/aws-autoscaling',
     '@aws-cdk/aws-route53',
     '@aws-cdk/aws-ssm',
     '@aws-cdk/aws-rds',
@@ -58,7 +59,7 @@ const project = new AwsCdkTypeScriptApp({
   //releaseEveryCommit: true,
   //releaseToNpm: true,
 
-  gitignore: ['cdk.out', 'cdk.context.json', "*.d.ts", "*.js"],
+  gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js'],
 
   // cdkDependencies: undefined,  /* Which AWS CDK modules (those that start with "@aws-cdk/") this app uses. */
   // deps: [],                    /* Runtime dependencies of this module. */

@@ -84,6 +84,11 @@
       "type": "runtime"
     },
     {
+      "name": "@aws-cdk/aws-autoscaling",
+      "version": "^1.132.0",
+      "type": "runtime"
+    },
+    {
       "name": "@aws-cdk/aws-certificatemanager",
       "version": "^1.132.0",
       "type": "runtime"
