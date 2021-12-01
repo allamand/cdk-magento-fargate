@@ -1,15 +1,26 @@
 import '@aws-cdk/assert/jest';
-import { App } from '@aws-cdk/core';
+import { App, AppProps } from '@aws-cdk/core';
 import { MagentoStack } from '../src/main';
 
 
 test('Snapshot', () => {
-  const app = new App({
-    context: {
+
+const appProps: AppProps = {
+  analyticsReporting: false,
+  autoSynth: false,
+  context: {
+    contextKey: {
       route53_domain_zone: 'magento.mydomain.com',
       magento_debug_task: 'yes',
     },
-  });
+  },
+  outdir: 'outdir',
+  runtimeInfo: false,
+  stackTraces: false,
+  treeMetadata: false,
+};
+
+  const app = new App(appProps);
 
   const stackName = process.env.CDK_STACK_NAME ? process.env.CDK_STACK_NAME : 'magento';
   const clusterName = stackName;

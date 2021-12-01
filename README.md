@@ -197,6 +197,9 @@ php -d memory_limit=-1 bin/magento sampledata:deploy
 
 #php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
 
+php -d memory_limit=-1 bin/magento catalog:image:resize
+/opt/bitnami/magento/bin/magento catalog:image:resize
+
 composer diagnose
 composer self-update
 
