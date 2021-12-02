@@ -18,8 +18,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Envrionment Variables for Build
         env:
-          ACCOUNT: "1234567890"
-          REGION: us-east-1
+          CDK_DEFAULT_ACCOUNT: "1234567890"
+          CDK_DEFAULT_REGION: us-east-1
         run: echo $ACCOUNT $REGION
       - name: Install dependencies
         run: yarn install --check-files --frozen-lockfile

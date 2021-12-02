@@ -6,8 +6,8 @@ const project = new AwsCdkTypeScriptApp({
   workflowBootstrapSteps: [{
   name: 'Envrionment Variables for Build',
   env: {
-    ACCOUNT: '1234567890',
-    REGION: 'us-east-1',
+    CDK_DEFAULT_ACCOUNT: '1234567890',
+    CDK_DEFAULT_REGION: 'us-east-1',
   },
   run: 'echo $ACCOUNT $REGION',
 }],
@@ -76,9 +76,5 @@ const project = new AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
-
-// Used for CDK Synth - In the CI Pipeline
-project.buildTask.env('account', '1234567890');
-project.buildTask.env('region', 'us-east-1');
 
 project.synth();
