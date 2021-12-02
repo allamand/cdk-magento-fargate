@@ -133,6 +133,8 @@ export class MagentoService extends Construct {
 
     // Lookup pre-existing TLS certificate for our magento service:
     const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
+    // ? this.node.tryGetContext('route53_domain_zone')
+    // : 'magento.mydomain.com';
     const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
       ? this.node.tryGetContext('route53_magento_prefix')
       : stack.stackName;

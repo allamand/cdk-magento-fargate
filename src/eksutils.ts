@@ -3,7 +3,7 @@ import {
   AwsLogDriver,
   ContainerImage, FargatePlatformVersion, FargateService, FargateTaskDefinition,
   ICluster,
-  RepositoryImage
+  RepositoryImage,
 } from '@aws-cdk/aws-ecs';
 import { NetworkLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns';
 import { FileSystem, IFileSystem } from '@aws-cdk/aws-efs';

@@ -245,9 +245,9 @@ export class MagentoStack extends Stack {
 
     /*
       ** I usr my own password because I have issues with generated ones
-      ** Could not validate a connection to Elasticsearch. Could not parse URI: "htt  
-  ps://magento-master-os:[#R./kciPtaY_hR=bp{@RO*Z4!}\#9Mv@search-magento-cdk2  
-  -rgepbodbvredpleax3puvmmaui.eu-west-1.es.amazonaws.com:443"  
+      ** Could not validate a connection to Elasticsearch. Could not parse URI: "htt
+  ps://magento-master-os:[#R./kciPtaY_hR=bp{@RO*Z4!}\#9Mv@search-magento-cdk2
+  -rgepbodbvredpleax3puvmmaui.eu-west-1.es.amazonaws.com:443"
       */
     // const OS_MASTER_USER_PASSWORD = this.node.tryGetContext('os_master_user_password')
     //   ? this.node.tryGetContext('os_master_user_password')
