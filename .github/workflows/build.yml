@@ -13,8 +13,6 @@ jobs:
       actions: write
     env:
       CI: "true"
-      CDK_DEFAULT_ACCOUNT: ${{secrets.CDK_DEFAULT_ACCOUNT}}
-      CDK_DEFAULT_REGION: ${{secrets.CDK_DEFAULT_REGION}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
