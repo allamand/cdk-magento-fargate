@@ -6,10 +6,10 @@ const project = new AwsCdkTypeScriptApp({
   workflowBootstrapSteps: [{
   name: 'Envrionment Variables for Build',
   env: {
-    CDK_DEFAULT_ACCOUNT: '1234567890',
+    CDK_DEFAULT_ACCOUNT: '1234567890', 
     CDK_DEFAULT_REGION: 'us-east-1',
   },
-  run: 'echo $ACCOUNT $REGION',
+  run: 'echo $CDK_DEFAULT_ACCOUNT $CDK_DEFAULT_REGION',
 }],
   appEntrypoint: 'integ.ts',
   cdkDependencies: [
