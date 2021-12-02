@@ -58,6 +58,13 @@ pj
 
 First of all, you must specify a stack name that would be used to create your stack. This is done with an environment parameter `CDK_STACK_NAME` which defaults to `magento`.
 
+```bash
+export CDK_STACK_NAME=magento42
+```
+
+> **IMPORTANT** Note $CDK_STACK_NAME is also used to create database name, and domain names, Valid characters are a-z (lowercase only), 0-9
+
+
 This variable can exported it in your environment before creating the stack.
 Other resources, can also be created based on the stack name, but you can also control this using the CDK context parameters used through Projen, see below:
 
@@ -77,7 +84,7 @@ After updating the **context** section you will need to run again `pj` in order 
     //db_name: 'magento', // default to env $CDK_STACK_NAME
     db_user: 'magentodbuser',
 
-    route53_domain_zone: 'ecs.demo3.allamand.com',
+    route53_domain_zone: 'your-hosted-zone.route53.com',
     //route53_magento_prefix: 'magento', // default to $CDK_STACK_NAME
     //route53_eksutils_prefix: 'eksutils', // default to $CDK_STACK_NAME-eksutils
 

@@ -153,7 +153,7 @@ export class MagentoService extends Construct {
     const alb = new ApplicationLoadBalancer(this, id + 'ALB', {
       vpc: props.vpc,
       internetFacing: true,
-      loadBalancerName: 'ecs-' + props.cluster.clusterName,
+      loadBalancerName: 'ecs-' + id,
     });
 
     var certificate = undefined;
