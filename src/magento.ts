@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/member-ordering */
+
 import { Certificate } from '@aws-cdk/aws-certificatemanager';
 import { ISecurityGroup } from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
@@ -120,6 +122,7 @@ export interface MagentoServiceProps {
  ** //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-readme.html
  */
 export class MagentoService extends Construct {
+
   readonly service!: ApplicationLoadBalancedFargateService;
   readonly hostName: string;
   getService() {
