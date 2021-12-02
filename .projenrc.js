@@ -68,4 +68,9 @@ const project = new AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
+
+// Used for CDK Synth - In the CI Pipeline
+project.buildTask.env('account', '1234567890');
+project.buildTask.env('region', 'us-east-1');
+
 project.synth();
