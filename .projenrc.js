@@ -3,7 +3,7 @@ const project = new AwsCdkTypeScriptApp({
   cdkVersion: '1.132.0',
   defaultReleaseBranch: 'main',
   name: 'cdk-magento-fargate',
-  appEntrypoint: 'integ.default.ts',
+  appEntrypoint: 'integ.ts',
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
     '@aws-cdk/aws-ec2',
@@ -49,7 +49,7 @@ const project = new AwsCdkTypeScriptApp({
     //db_name: 'magento3', // default to env $CDK_STACK_NAME
     db_user: 'magentodbuser',
 
-    route53_domain_zone: 'sriram-experiments.online',
+    route53_domain_zone: 'ecs.demo3.allamand.com',
     //route53_magento_prefix: 'magento4', // default to $CDK_STACK_NAME
     //route53_eksutils_prefix: 'eksutils4', // default to $CDK_STACK_NAME-eksutils
     magento_user: 'user1',
