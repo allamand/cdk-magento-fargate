@@ -3,6 +3,14 @@ const project = new AwsCdkTypeScriptApp({
   cdkVersion: '1.132.0',
   defaultReleaseBranch: 'main',
   name: 'cdk-magento-fargate',
+  workflowBootstrapSteps: [{
+  name: 'Envrionment Variables for Build',
+  env: {
+    ACCOUNT: '1234567890',
+    REGION: 'us-east-1',
+  },
+  run: 'echo $ACCOUNT $REGION',
+}],
   appEntrypoint: 'integ.ts',
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
