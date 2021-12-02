@@ -111,10 +111,10 @@ Object {
       "Value": "https://undefined",
     },
     "MagentoServiceMagentoServiceURL535A3D99": Object {
-      "Value": "https://undefined",
+      "Value": "https://magento.magento.mydomain.com",
     },
     "MagentoServicemagentoURL8C570F66": Object {
-      "Value": "https://undefined",
+      "Value": "https://magento.magento.mydomain.com",
     },
   },
   "Parameters": Object {
@@ -141,6 +141,10 @@ Object {
     "AssetParameters1f7e277bd526ebce1983fa1e7a84a5281ec533d9187caaebb773681bbf7bf4c1S3VersionKeyD0A0B57A": Object {
       "Description": "S3 key for asset version \\"1f7e277bd526ebce1983fa1e7a84a5281ec533d9187caaebb773681bbf7bf4c1\\"",
       "Type": "String",
+    },
+    "MagentoServiceCertArnParameterParameterAD41925C": Object {
+      "Default": "CertificateArn-magento.mydomain.com",
+      "Type": "AWS::SSM::Parameter::Value<String>",
     },
   },
   "Resources": Object {
@@ -1632,6 +1636,13 @@ Object {
     },
     "MagentoServiceMagentoServiceALBMagentoServiceListener8F85A69A": Object {
       "Properties": Object {
+        "Certificates": Array [
+          Object {
+            "CertificateArn": Object {
+              "Ref": "MagentoServiceCertArnParameterParameterAD41925C",
+            },
+          },
+        ],
         "DefaultActions": Array [
           Object {
             "TargetGroupArn": Object {
@@ -1643,8 +1654,8 @@ Object {
         "LoadBalancerArn": Object {
           "Ref": "MagentoServiceMagentoServiceALBDFAB92E2",
         },
-        "Port": 80,
-        "Protocol": "HTTP",
+        "Port": 443,
+        "Protocol": "HTTPS",
       },
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
     },
@@ -1683,10 +1694,10 @@ Object {
         "SecurityGroupIngress": Array [
           Object {
             "CidrIp": "0.0.0.0/0",
-            "Description": "Allow from anyone on port 80",
-            "FromPort": 80,
+            "Description": "Allow from anyone on port 443",
+            "FromPort": 443,
             "IpProtocol": "tcp",
-            "ToPort": 80,
+            "ToPort": 443,
           },
         ],
         "VpcId": Object {
@@ -1715,6 +1726,36 @@ Object {
         "ToPort": 8080,
       },
       "Type": "AWS::EC2::SecurityGroupEgress",
+    },
+    "MagentoServiceMagentoServiceAliasRecord4ABBF077": Object {
+      "Properties": Object {
+        "AliasTarget": Object {
+          "DNSName": Object {
+            "Fn::Join": Array [
+              "",
+              Array [
+                "dualstack.",
+                Object {
+                  "Fn::GetAtt": Array [
+                    "MagentoServiceMagentoServiceALBDFAB92E2",
+                    "DNSName",
+                  ],
+                },
+              ],
+            ],
+          },
+          "HostedZoneId": Object {
+            "Fn::GetAtt": Array [
+              "MagentoServiceMagentoServiceALBDFAB92E2",
+              "CanonicalHostedZoneID",
+            ],
+          },
+        },
+        "HostedZoneId": "DUMMY",
+        "Name": "magento.magento.mydomain.com.",
+        "Type": "A",
+      },
+      "Type": "AWS::Route53::RecordSet",
     },
     "MagentoServiceServiceMagentoService0563DA5B": Object {
       "DependsOn": Array [
@@ -1917,6 +1958,7 @@ Object {
               },
               Object {
                 "Name": "MAGENTO_HOST",
+                "Value": "magento.magento.mydomain.com",
               },
               Object {
                 "Name": "MAGENTO_ENABLE_HTTPS",

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/member-ordering */
 
+import { Certificate } from '@aws-cdk/aws-certificatemanager';
 import { ISecurityGroup, IVpc } from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
 import {
@@ -19,8 +20,11 @@ import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
 import { Domain } from '@aws-cdk/aws-opensearchservice';
 import { IDatabaseCluster } from '@aws-cdk/aws-rds';
+import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
+import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
+import { StringParameter } from '@aws-cdk/aws-ssm';
 import { CfnOutput, Construct, Duration, Stack } from '@aws-cdk/core';
 
 /**
@@ -143,7 +147,6 @@ export class MagentoService extends Construct {
     // ? this.node.tryGetContext('route53_domain_zone')
     // : 'magento.mydomain.com';
 
-
     /**
      * create ALB
      */
@@ -159,27 +162,28 @@ export class MagentoService extends Construct {
     // If we define a route53 hosted zone, we setup also SSL and certificate
     if (!props.debug) {
       if (r53DomainZone != undefined) {
-      // const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
-      // ? this.node.tryGetContext('route53_magento_prefix')
-      // : stack.stackName;
-        // const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
-        //   parameterName: 'CertificateArn-' + r53DomainZone,
-        // }).stringValue;
-        // certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
-        // domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
-        // this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
+        // listener = alb.addListener(id + 'Listener', { port: 80 });
+        // certificate;
+        // domainZone;
 
-        //listener = alb.addListener(id + 'Listener', { port: 443 });
-        listener = alb.addListener(id + 'Listener', { port: 80 });
+        const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
+          ? this.node.tryGetContext('route53_magento_prefix')
+          : stack.stackName;
+        const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
+          parameterName: 'CertificateArn-' + r53DomainZone,
+        }).stringValue;
+        certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
+        domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
+        this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
-        // listener.addCertificates(id + 'cert', [certificate]);
-        // new ARecord(this, id + 'AliasRecord', {
-        //   zone: domainZone,
-        //   recordName: r53MagentoPrefix + '.' + r53DomainZone,
-        //   target: RecordTarget.fromAlias(new LoadBalancerTarget(alb))
-        //});
-        certificate;
-        domainZone;
+        listener = alb.addListener(id + 'Listener', { port: 443 });
+
+        listener.addCertificates(id + 'cert', [certificate]);
+        new ARecord(this, id + 'AliasRecord', {
+          zone: domainZone,
+          recordName: r53MagentoPrefix + '.' + r53DomainZone,
+          target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
+        });
       } else {
         //if no route53 we will run in http mode on default LB domain name
         listener = alb.addListener(id + 'Listener', { port: 80 });
