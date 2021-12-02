@@ -66,6 +66,10 @@
     "build": {
       "name": "build",
       "description": "Full release build (test+compile)",
+      "env": {
+        "account": "1234567890",
+        "region": "us-east-1"
+      },
       "steps": [
         {
           "exec": "npx projen"

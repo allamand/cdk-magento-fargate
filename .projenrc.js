@@ -3,7 +3,17 @@ const project = new AwsCdkTypeScriptApp({
   cdkVersion: '1.132.0',
   defaultReleaseBranch: 'main',
   name: 'cdk-magento-fargate',
-
+  appEntrypoint: 'integ.ts',
+  // workflowBootstrapSteps: [
+  //   {
+  //     name: 'build',
+  //     env: {
+  //       ACCOUNT: '1234567890',
+  //       REGION: 'us-east-1',
+  //     },
+  //     run: 'echo $ACCOUNT $REGION',
+  //   },
+  // ],
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
     '@aws-cdk/aws-ec2',
@@ -68,4 +78,10 @@ const project = new AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
+
+project.buildWorkflow.file.addOverride('jobs.build.env', {
+  CDK_DEFAULT_ACCOUNT: '${{secrets.CDK_DEFAULT_ACCOUNT}}',
+  CDK_DEFAULT_REGION: '${{secrets.CDK_DEFAULT_REGION}}',
+});
+
 project.synth();
