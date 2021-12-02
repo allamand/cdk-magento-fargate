@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/member-ordering */ 
+
 import { Certificate } from '@aws-cdk/aws-certificatemanager';
 import { ISecurityGroup } from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
