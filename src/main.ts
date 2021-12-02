@@ -7,7 +7,7 @@ import * as opensearch from '@aws-cdk/aws-opensearchservice';
 import { Credentials, DatabaseCluster, DatabaseClusterEngine } from '@aws-cdk/aws-rds';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { App, CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps } from '@aws-cdk/core';
+import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import { EksUtilsTask } from './eksutils';
 import { MagentoService } from './magento';
@@ -36,6 +36,7 @@ export class MagentoStack extends Stack {
     }
 
     //Create or Reuse VPC
+    let stackName = this.stackName;
     var vpc = undefined;
     const vpcTagName = this.node.tryGetContext('vpc_tag_name') || undefined;
     if (vpcTagName) {
@@ -100,7 +101,7 @@ export class MagentoStack extends Stack {
       description: 'magento Opensearch Admin password for ' + stackName,
       encryptionKey: kmsKey,
       generateSecretString: {
-        excludeCharacters: '|-,\'":@/<>;()[]{}/&`%#?!',
+        excludeCharacters: '|-,\'":@/<>;()[]{}/&`?#*.%$!~^_+',
         includeSpace: false,
         excludePunctuation: false,
       },
@@ -430,24 +431,3 @@ export class MagentoStack extends Stack {
     });
   }
 }
-
-// for development, use account/region from cdk cli
-const stackName = process.env.CDK_STACK_NAME ? process.env.CDK_STACK_NAME : 'magento';
-const clusterName = stackName;
-
-const devEnv = {
-  account: process.env.CDK_DEFAULT_ACCOUNT,
-  region: process.env.CDK_DEFAULT_REGION,
-};
-
-const app = new App();
-
-new MagentoStack(app, stackName, {
-  clusterName: clusterName,
-  createCluster: true,
-  env: devEnv,
-});
-
-// new MyStack(app, 'my-stack-prod', { env: prodEnv });
-
-app.synth();
