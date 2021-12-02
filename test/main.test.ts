@@ -29,8 +29,8 @@ test('For Mandatory Infra Constructs have been created', () => {
   expect(stack).toHaveResource('AWS::OpenSearchService::Domain');
   expect(stack).toHaveResource('AWS::ECS::Service');
   expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::LoadBalancer');
-  
-  // Expect for Resource with this Specs 
-  
+
+  // Expect for Resource with this Specs
+
   expect(app.synth().getStackArtifact(stack.artifactId).template).toMatchSnapshot();
 });

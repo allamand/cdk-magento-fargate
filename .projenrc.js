@@ -3,7 +3,7 @@ const project = new AwsCdkTypeScriptApp({
   cdkVersion: '1.132.0',
   defaultReleaseBranch: 'main',
   name: 'cdk-magento-fargate',
-
+  appEntrypoint: 'integ.default.ts',
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
     '@aws-cdk/aws-ec2',
@@ -40,7 +40,7 @@ const project = new AwsCdkTypeScriptApp({
   },
 
   context: {
-    vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
+    //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     enablePrivateLink: 'false', // this parameter seems to works only one
 
     //os_domain: 'magento-cdk4', // default to $CDK_STACK_NAME
@@ -49,7 +49,7 @@ const project = new AwsCdkTypeScriptApp({
     //db_name: 'magento3', // default to env $CDK_STACK_NAME
     db_user: 'magentodbuser',
 
-    route53_domain_zone: 'ecs.demo3.allamand.com',
+    route53_domain_zone: 'sriram-experiments.online',
     //route53_magento_prefix: 'magento4', // default to $CDK_STACK_NAME
     //route53_eksutils_prefix: 'eksutils4', // default to $CDK_STACK_NAME-eksutils
     magento_user: 'user1',
