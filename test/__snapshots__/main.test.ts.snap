@@ -1098,17 +1098,7 @@ Object {
             "Value": "false",
           },
         ],
-        "Name": Object {
-          "Fn::Join": Array [
-            "",
-            Array [
-              "ecs-",
-              Object {
-                "Ref": "ClusterEB0386A7",
-              },
-            ],
-          ],
-        },
+        "Name": "ecs-MagentoServiceDebug",
         "Scheme": "internet-facing",
         "SecurityGroups": Array [
           Object {
@@ -1602,17 +1592,7 @@ Object {
             "Value": "false",
           },
         ],
-        "Name": Object {
-          "Fn::Join": Array [
-            "",
-            Array [
-              "ecs-",
-              Object {
-                "Ref": "ClusterEB0386A7",
-              },
-            ],
-          ],
-        },
+        "Name": "ecs-MagentoService",
         "Scheme": "internet-facing",
         "SecurityGroups": Array [
           Object {
