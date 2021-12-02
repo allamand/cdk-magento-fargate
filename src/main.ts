@@ -9,9 +9,7 @@ import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
-import { EksUtilsTask } from './eksutils';
 import { MagentoService } from './magento';
-import { throwIfNotAvailable } from './utils';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
 export interface MagentoStackProps extends StackProps {
@@ -29,11 +27,11 @@ export class MagentoStack extends Stack {
     //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-patterns-readme.html#use-the-remove_default_desired_count-feature-flag
     stack.node.setContext(cxapi.ECS_REMOVE_DEFAULT_DESIRED_COUNT, true);
 
-    //Check for mandatory context to be set-ups
-    const requiredContextVariables = ['route53_domain_zone'];
-    if (this != undefined) {
-      requiredContextVariables.map((v) => throwIfNotAvailable(this, v));
-    }
+    //Check for mandatory context to be set-ups - route53_domain_zone is not mandatory anymore
+    // const requiredContextVariables = ['route53_domain_zone'];
+    // if (this != undefined) {
+    //   requiredContextVariables.map((v) => throwIfNotAvailable(this, v));
+    // }
 
     //Create or Reuse VPC
     let stackName = this.stackName;
@@ -362,6 +360,7 @@ export class MagentoStack extends Stack {
      */
     const magentoImage = 'public.ecr.aws/seb-demo/magento:elasticsearch-https-3';
     new MagentoService(this, 'MagentoService', {
+      vpc: vpc,
       cluster: cluster!,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
@@ -373,34 +372,21 @@ export class MagentoStack extends Stack {
       osDomain: osDomain,
       osUser: OS_MASTER_USER_NAME,
       osPassword: magentoOpensearchAdminPassword,
-      //osPassword: OS_MASTER_USER_PASSWORD,
       kmsKey: kmsKey,
       execBucket: execBucket,
       execLogGroup: execLogGroup,
       serviceSG: serviceSG,
     });
-    //const service = magentoService.getService();
 
     //allow to communicate with OpenSearch
     openSearchSG.addIngressRule(serviceSG, Port.allTraffic(), 'allow traffic fom ECS service');
     serviceSG.addIngressRule(openSearchSG, Port.allTraffic(), 'allow traffic fom Opensearch');
 
-    // var policyStatement = new PolicyStatement({
-    //   effect: Effect.ALLOW,
-    //   resources: ['*'],
-    //   actions: ['ecs:ListTasks', 'ecs:DescribeTasks'],
-    // });
-
-    // service.taskDefinition.taskRole.attachInlinePolicy(
-    //   new Policy(this, 'policy', {
-    //     statements: [policyStatement],
-    //   }),
-    // );
-
     // Add Debug Task
     const magentoDebugTask = this.node.tryGetContext('magento_debug_task');
     if (magentoDebugTask == 'yes') {
       new MagentoService(this, 'MagentoServiceDebug', {
+        vpc: vpc,
         cluster: cluster!,
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
@@ -412,7 +398,6 @@ export class MagentoStack extends Stack {
         osDomain: osDomain,
         osUser: OS_MASTER_USER_NAME,
         osPassword: magentoOpensearchAdminPassword,
-        //osPassword: OS_MASTER_USER_PASSWORD,
         serviceSG: serviceSG,
         kmsKey: kmsKey,
         execBucket: execBucket,
@@ -421,13 +406,6 @@ export class MagentoStack extends Stack {
       });
     }
 
-    new EksUtilsTask(this, 'eksutils', props, {
-      vpc: vpc,
-      cluster: cluster,
-      name: 'eksutils',
-      kmsKey: kmsKey,
-      execBucket: execBucket,
-      execLogGroup: execLogGroup,
-    });
   }
+
 }

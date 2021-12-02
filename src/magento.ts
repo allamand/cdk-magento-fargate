@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/member-ordering */ 
+/* eslint-disable @typescript-eslint/member-ordering */
 
 import { Certificate } from '@aws-cdk/aws-certificatemanager';
-import { ISecurityGroup } from '@aws-cdk/aws-ec2';
+import { ISecurityGroup, IVpc } from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
 import {
   AwsLogDriver,
@@ -13,15 +13,15 @@ import {
   FargateTaskDefinition,
   ICluster,
 } from '@aws-cdk/aws-ecs';
-import { ApplicationLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns';
 import { IFileSystem } from '@aws-cdk/aws-efs';
-import { SslPolicy } from '@aws-cdk/aws-elasticloadbalancingv2';
+import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
 import { Domain } from '@aws-cdk/aws-opensearchservice';
 import { IDatabaseCluster } from '@aws-cdk/aws-rds';
-import { HostedZone } from '@aws-cdk/aws-route53';
+import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
+import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { StringParameter } from '@aws-cdk/aws-ssm';
@@ -31,6 +31,11 @@ import { CfnOutput, Construct, Duration, Stack } from '@aws-cdk/core';
  * construct properties for EksUtils
  */
 export interface MagentoServiceProps {
+  /**
+   * Vpc for the Service
+   * @default - create a new VPC or use existing one
+   */
+  readonly vpc: IVpc;
   /**
    * Cluster ECS
    */
@@ -122,8 +127,8 @@ export interface MagentoServiceProps {
  ** //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-readme.html
  */
 export class MagentoService extends Construct {
-  readonly service!: ApplicationLoadBalancedFargateService;
-  readonly hostName: string;
+  readonly service!: FargateService;
+  readonly hostName!: string;
   getService() {
     return this.service;
   }
@@ -133,6 +138,10 @@ export class MagentoService extends Construct {
 
     const stack = Stack.of(this);
 
+    /*
+     ** If we provide var in context route53_domain_zone, then we want to uses this hostedzone to expose our app.
+     ** else, we are only going to leverage default load balancer DNS name.
+     */
     // Lookup pre-existing TLS certificate for our magento service:
     const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
     // ? this.node.tryGetContext('route53_domain_zone')
@@ -141,12 +150,43 @@ export class MagentoService extends Construct {
       ? this.node.tryGetContext('route53_magento_prefix')
       : stack.stackName;
 
-    const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
-      parameterName: 'CertificateArn-' + r53DomainZone,
-    }).stringValue;
-    const certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
-    const domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
-    this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
+    /**
+     * create ALB
+     */
+    const alb = new ApplicationLoadBalancer(this, id + 'ALB', {
+      vpc: props.vpc,
+      internetFacing: true,
+      loadBalancerName: 'ecs-' + props.cluster.clusterName,
+    });
+
+    var certificate = undefined;
+    var domainZone = undefined;
+    var listener = undefined;
+    // If we define a route53 hosted zone, we setup also SSL and certificate
+    if (!props.debug) {
+      if (r53DomainZone != undefined) {
+        const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
+          parameterName: 'CertificateArn-' + r53DomainZone,
+        }).stringValue;
+        certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
+        domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
+        this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
+
+        listener = alb.addListener(id + 'Listener', { port: 443 });
+
+        listener.addCertificates(id + 'cert', [certificate]);
+        new ARecord(this, id + 'AliasRecord', {
+          zone: domainZone,
+          recordName: r53MagentoPrefix + '.' + r53DomainZone,
+          target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
+        });
+      } else {
+        //if no route53 we will run in http mode on default LB domain name
+        listener = alb.addListener(id + 'Listener', { port: 80 });
+        this.hostName = alb.loadBalancerDnsName;
+      }
+    }
+    new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
 
     //TODO: Which combination is the best for Magento ?
     const taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
@@ -171,11 +211,10 @@ export class MagentoService extends Construct {
       BITNAMI_DEBUG: 'true',
       MAGENTO_USERNAME: magentoUser,
       MAGENTO_DEPLOY_STATIC_CONTENT: 'yes',
-      MAGENTO_HOST: this.hostName,
+      MAGENTO_HOST: this!.hostName,
       MAGENTO_ENABLE_HTTPS: 'yes',
       MAGENTO_ENABLE_ADMIN_HTTPS: 'yes',
-      //MAGENTO_MODE: 'developer', //TODO: var for this
-      MAGENTO_MODE: 'production',
+      MAGENTO_MODE: 'production', //TODO: var for this
 
       //TODO: add HTTP Cache
 
@@ -196,9 +235,6 @@ export class MagentoService extends Construct {
       MAGENTO_ELASTICSEARCH_ENABLE_AUTH: 'yes',
       MAGENTO_ELASTICSEARCH_USER: props.osUser,
 
-      //MAGENTO_ELASTICSEARCH_PASSWORD: props.osDomain.masterUserPassword!.toString(),
-      //MAGENTO_ELASTICSEARCH_PASSWORD: props.osPassword,
-
       PHP_MEMORY_LIMIT: '2G',
     };
     const magentoSecrets = {
@@ -215,7 +251,7 @@ export class MagentoService extends Construct {
       environment: magentoEnvs,
       secrets: magentoSecrets,
     };
-    const container = taskDefinition.addContainer('magento' + id, containerDef);
+    const container = taskDefinition.addContainer('magento', containerDef);
 
     container.addPortMappings({
       containerPort: 8080,
@@ -236,8 +272,6 @@ export class MagentoService extends Construct {
           'ecr:BatchCheckLayerAvailability',
           'ecr:GetDownloadUrlForLayer',
           'ecr:BatchGetImage',
-          // 'logs:CreateLogStream', // they are done automatically
-          // 'logs:PutLogEvents',
         ],
       }),
     );
@@ -268,119 +302,43 @@ export class MagentoService extends Construct {
      * Create service
      */
     var cluster = props.cluster;
+
+    //No Load Balancer for Debug Service
+    this.service = new FargateService(this, 'Service' + id, {
+      cluster,
+      serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+      taskDefinition: taskDefinition,
+      desiredCount: 1,
+      platformVersion: FargatePlatformVersion.VERSION1_4,
+      securityGroups: [props.serviceSG],
+      enableExecuteCommand: true,
+    });
+
+    new CfnOutput(stack, 'EcsExecCommand' + id, {
+      value: `ecs_exec_service ${cluster.clusterName} ${this.service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
+    });
+
     if (!props.debug) {
-      this.service = new ApplicationLoadBalancedFargateService(this, 'magentoService' + id, {
-        cluster,
-        serviceName: id,
-        taskDefinition,
-        desiredCount: 1,
-        // deploymentController: {
-        //   type: ecs.DeploymentControllerType.CODE_DEPLOY,
-        // },
-        //circuitBreaker: { rollback: true },
-
-        // cloudMapOptions: {
-        //   // Create A records - useful for AWSVPC network mode.
-        //   dnsRecordType: DnsRecordType.A,
-        // },
-        //taskSubnets: ,
-        securityGroups: [props.serviceSG],
-        platformVersion: FargatePlatformVersion.VERSION1_4,
-        // capacityProviderStrategies: [
-        //   {
-        //     capacityProvider: 'FARGATE_SPOT',
-        //     weight: 2,
-        //   },
-        //   {
-        //     capacityProvider: 'FARGATE',
-        //     weight: 1,
-        //     base: 1,
-        //   },
-        // ],
-        maxHealthyPercent: 200,
-        minHealthyPercent: 50,
-
-        enableECSManagedTags: true,
-
-        certificate: certificate,
-        sslPolicy: SslPolicy.RECOMMENDED,
-        domainName: this.hostName,
-        domainZone: domainZone,
-        redirectHTTP: true,
-
-        healthCheckGracePeriod: Duration.minutes(60),
+      const target = listener!.addTargets(id + 'Targets', {
+        port: 8080,
+        targets: [
+          this.service.loadBalancerTarget({
+            containerName: 'magento',
+            containerPort: 8080,
+          }),
+        ],
+        healthCheck: {
+          healthyThresholdCount: 2, // Min 2
+          unhealthyThresholdCount: 10, // MAx 10
+          timeout: Duration.seconds(120),
+          interval: Duration.seconds(125),
+          healthyHttpCodes: '200-499',
+          path: '/',
+        },
+        deregistrationDelay: Duration.seconds(120),
       });
 
-      //ApplicationLoadBalancedFargateService don't have automatic activation oc ecs exec, so that we need to manually add it and also add the policies
-      //enable execute https://github.com/aws/aws-cdk/issues/15197
-      const cfnService = this.service.service.node.defaultChild as ecs.CfnService;
-      cfnService.enableExecuteCommand = true;
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          actions: [
-            'ssmmessages:CreateControlChannel',
-            'ssmmessages:CreateDataChannel',
-            'ssmmessages:OpenControlChannel',
-            'ssmmessages:OpenDataChannel',
-          ],
-          resources: ['*'],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['logs:DescribeLogGroups'],
-          resources: ['*'],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents'],
-          resources: [props.execLogGroup.logGroupArn],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['s3:GetBucketLocation'],
-          resources: ['*'],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['s3:GetEncryptionConfiguration'],
-          resources: [props.execBucket.bucketArn],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['s3:PutObject'],
-          resources: [props.execBucket.bucketArn],
-        }),
-      );
-      this.service.taskDefinition.addToTaskRolePolicy(
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['kms:Decrypt', 'kms:GenerateDataKey'],
-          resources: [props.kmsKey.keyArn],
-        }),
-      );
-
-      //Load Balancer configuration
-      this.service.targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
-      this.service.targetGroup.configureHealthCheck({
-        interval: Duration.seconds(60),
-        healthyHttpCodes: '200,302',
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 10,
-        timeout: Duration.seconds(50),
-        path: '/',
-      });
-
-      const scalableTarget = this.service.service.autoScaleTaskCount({
+      const scalableTarget = this.service.autoScaleTaskCount({
         minCapacity: 1,
         maxCapacity: 50,
       });
@@ -391,7 +349,7 @@ export class MagentoService extends Construct {
 
       scalableTarget.scaleOnRequestCount('RequestScaling', {
         requestsPerTarget: 10000,
-        targetGroup: this.service.targetGroup,
+        targetGroup: target,
       });
 
       //TODO : Scalable target on schedule
@@ -406,29 +364,9 @@ export class MagentoService extends Construct {
       //   schedule: Schedule.cron({ hour: '8', minute: '0' }),
       //   minCapacity: 10,
       // });
-
-      //new CfnOutput(this, 'magentoURL', { value: 'https://' + this.service.loadBalancer.loadBalancerDnsName });
-      new CfnOutput(this, 'magentoURL', { value: 'https://' + this.hostName });
-
-      new CfnOutput(stack, 'EcsExecCommand' + id, {
-        value: `ecs_exec_service ${cluster.clusterName} ${this.service.service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
-      });
-    } else {
-      //props.debug==true
-      //No Load Balancer for Debug Service
-      const debugService = new FargateService(this, 'Service' + id, {
-        cluster,
-        serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
-        taskDefinition: taskDefinition,
-        desiredCount: 1,
-        platformVersion: FargatePlatformVersion.VERSION1_4,
-        securityGroups: [props.serviceSG],
-        enableExecuteCommand: true,
-      });
-
-      new CfnOutput(stack, 'EcsExecCommand' + id, {
-        value: `ecs_exec_service ${cluster.clusterName} ${debugService.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
-      });
     }
+
+    //new CfnOutput(this, 'magentoURL', { value: 'https://' + this.service.loadBalancer.loadBalancerDnsName });
+    new CfnOutput(this, 'magentoURL', { value: 'https://' + this!.hostName });
   }
 }

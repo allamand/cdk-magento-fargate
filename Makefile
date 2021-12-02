@@ -9,6 +9,9 @@ diff: projen
 synth: projen
 	npx cdk synth	
 
+build:
+	npx projen build
+	
 deploy: projen
 	npx cdk deploy --require-approval=never
 
