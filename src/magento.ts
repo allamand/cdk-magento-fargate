@@ -150,11 +150,14 @@ export class MagentoService extends Construct {
     /**
      * create ALB
      */
-    const alb = new ApplicationLoadBalancer(this, id + 'ALB', {
-      vpc: props.vpc,
-      internetFacing: true,
-      loadBalancerName: 'ecs-' + id,
-    });
+    var alb = undefined;
+    if (!props.debug) {
+      alb = new ApplicationLoadBalancer(this, id + 'ALB', {
+        vpc: props.vpc,
+        internetFacing: true,
+        loadBalancerName: 'ecs-' + id,
+      });
+    }
 
     var certificate = undefined;
     var domainZone = undefined;
@@ -176,18 +179,18 @@ export class MagentoService extends Construct {
         domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
         this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
-        listener = alb.addListener(id + 'Listener', { port: 443 });
+        listener = alb!.addListener(id + 'Listener', { port: 443 });
 
         listener.addCertificates(id + 'cert', [certificate]);
         new ARecord(this, id + 'AliasRecord', {
           zone: domainZone,
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
-          target: RecordTarget.fromAlias(new LoadBalancerTarget(alb)),
+          target: RecordTarget.fromAlias(new LoadBalancerTarget(alb!)),
         });
       } else {
         //if no route53 we will run in http mode on default LB domain name
-        listener = alb.addListener(id + 'Listener', { port: 80 });
-        this.hostName = alb.loadBalancerDnsName;
+        listener = alb!.addListener(id + 'Listener', { port: 80 });
+        this.hostName = alb!.loadBalancerDnsName;
       }
     }
     new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
@@ -316,6 +319,7 @@ export class MagentoService extends Construct {
       platformVersion: FargatePlatformVersion.VERSION1_4,
       securityGroups: [props.serviceSG],
       enableExecuteCommand: true,
+      healthCheckGracePeriod: Duration.hours(1),
     });
 
     new CfnOutput(stack, 'EcsExecCommand' + id, {
