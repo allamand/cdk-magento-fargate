@@ -100,7 +100,7 @@ export class MagentoStack extends Stack {
       description: 'magento Opensearch Admin password for ' + stackName,
       encryptionKey: kmsKey,
       generateSecretString: {
-        excludeCharacters: '|-,\'":@/<>;()[]{}/&`%#?!',
+        excludeCharacters: '|-,\'":@/<>;()[]{}/&`?#*.%$!~^_+',
         includeSpace: false,
         excludePunctuation: false,
       },
