@@ -187,13 +187,14 @@ export class MagentoService extends Construct {
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
           target: RecordTarget.fromAlias(new LoadBalancerTarget(alb!)),
         });
+        new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
       } else {
         //if no route53 we will run in http mode on default LB domain name
         listener = alb!.addListener(id + 'Listener', { port: 80 });
         this.hostName = alb!.loadBalancerDnsName;
+        new CfnOutput(this, id + 'URL', { value: 'http://' + this.hostName });
       }
     }
-    new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
 
     //TODO: Which combination is the best for Magento ?
     const taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
@@ -219,8 +220,8 @@ export class MagentoService extends Construct {
       MAGENTO_USERNAME: magentoUser,
       MAGENTO_DEPLOY_STATIC_CONTENT: 'yes',
       MAGENTO_HOST: this!.hostName,
-      MAGENTO_ENABLE_HTTPS: 'yes',
-      MAGENTO_ENABLE_ADMIN_HTTPS: 'yes',
+      MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
+      MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production', //TODO: var for this
 
       //TODO: add HTTP Cache

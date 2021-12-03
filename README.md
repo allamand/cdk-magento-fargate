@@ -212,7 +212,59 @@ php -d memory_limit=-1 bin/magento catalog:image:resize
 
 ### Set developper mode
 
+```
 php bin/magento deploy:mode:set developer
+```
+
+### Update Magento URL manually
+Using magento
+
+```
+bin/magento setup:store-config:set --base-url="http://www.magento2.com/"
+```
+
+or using DB
+```
+#Exec to the debut Task
+ecs_exec_service magento43 magento43MagentoServiceDebug magento
+
+#Connect to the DB
+mysql -h $MAGENTO_DATABASE_HOST -u$MAGENTO_DATABASE_USER -p$MAGENTO_DATABASE_PASSWORD -D $MAGENTO_DATABASE_NAME
+
+#query to update
+UPDATE core_config_data SET value = 'http://www.example.com/' WHERE path LIKE 'web/unsecure/base_url';
+UPDATE core_config_data SET value = 'https://www.example.com/' WHERE path LIKE 'web/secure/base_url';
+```
+
+select * from core_config_data WHERE path LIKE 'web/unsecure/base_url';
+select * from core_config_data WHERE path LIKE 'web/secure/base_url';
+select * from core_config_data WHERE path LIKE 'web/url/redirect_to_base';
+
+
+### Debug Magento Apache configuration
+
+Check Magento config:
+
+```
+php bin/magento config:show
+```
+
+
+Configuration files are :
+```
+# /opt/bitnami/apache/conf/httpd.conf
+# /opt/bitnami/apache/conf/extra/httpd-default.conf
+# /opt/bitnami/apache/conf/vhosts/*.conf
+# /opt/bitnami/apache/conf/bitnami/bitnami.conf
+# /opt/bitnami/apache/conf/bitnami/php.conf
+/opt/bitnami/magento/app/etc/env.php
+```
+
+grep ServerName  /opt/bitnami/apache/conf/httpd.conf
+
+43 - ecs-magento43magentoservice-2090334181.eu-west-1.elb.amazonaws.com
+re
+start apache
 
 # Troubleshoot Magento
 
