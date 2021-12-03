@@ -1642,7 +1642,6 @@ Object {
         "DesiredCount": 1,
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
-        "HealthCheckGracePeriodSeconds": 3600,
         "LaunchType": "FARGATE",
         "NetworkConfiguration": Object {
           "AwsvpcConfiguration": Object {
