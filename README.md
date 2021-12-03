@@ -142,7 +142,7 @@ make deploy
 ECS allows you to exec into a task to have a shell inside your container.
 The stack correctly configures the tasks so that you can securely connect inside.
 
-The cloudfomation stack shows you some commands so that you can directly use to exec inside your tasks.
+The CloudFomation stack shows you some commands so that you can directly use to exec inside your tasks.
 
 the Makefile can also show you these commands:
 

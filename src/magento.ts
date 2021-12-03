@@ -319,7 +319,7 @@ export class MagentoService extends Construct {
       platformVersion: FargatePlatformVersion.VERSION1_4,
       securityGroups: [props.serviceSG],
       enableExecuteCommand: true,
-      healthCheckGracePeriod: Duration.hours(1),
+      healthCheckGracePeriod: !props.debug ? Duration.hours(1) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
     });
 
     new CfnOutput(stack, 'EcsExecCommand' + id, {
