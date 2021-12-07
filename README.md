@@ -64,7 +64,6 @@ export CDK_STACK_NAME=magento42
 
 > **IMPORTANT** Note $CDK_STACK_NAME is also used to create database name, and domain names, Valid characters are a-z (lowercase only), 0-9
 
-
 This variable can exported it in your environment before creating the stack.
 Other resources, can also be created based on the stack name, but you can also control this using the CDK context parameters used through Projen, see below:
 
@@ -173,6 +172,15 @@ When Magento starts, it will execute the following command:
 /opt/bitnami/scripts/magento/entrypoint.sh /opt/bitnami/scripts/magento/run.sh
 ```
 
+cd /bitnami/magento
+bin/magento config:set web/unsecure/base_url http://ecs-magentodevmagentoservice-1199457188.eu-west-1.elb.amazonaws.com/
+
+/bitnami/magento/var/report/1a267331567e6b7872ad4e146da68d8125937220e558650d66e2a12c063668cc
+
+TODO: which folders to share
+chown -R daemon:daemon /bitnami/magento/
+{var,pub,media}
+
 If the Task didn't start properly, you can exec into the debug pod and manually execute the previous command to help figure out where comes the problem is. This can be credentials issues, passwords format like for example :
 
 ```
@@ -193,12 +201,35 @@ This will create a secure shell (The session is encrypted with a dedicated AWS K
 
 Example commands to install Magento sample data (https://github.com/magento/magento2-sample-data):
 
-```bash
+
 cd /bitnami/magento
-su - daemon
-composer update
+bin/magento maintenance:enable
+php -d memory_limit=-1 bin/magento sampledata:deploy
+php -d memory_limit=-1 bin/magento setup:upgrade
+php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
+php -d memory_limit=-1 bin/magento catalog:image:resize
+chown -R daemon:daemon /bitnami/magento/
+bin/magento maintenance:disable
+
+
+```bash
 
 php -d memory_limit=-1 bin/magento sampledata:deploy
+#credential from repo.magento.com /bitnami/magento/var/composer_home/auth.json
+#TODO: create this file from secretmanager
+mkdir -p /bitnami/magento/var/composer_home/
+cat <<EOF > /bitnami/magento/var/composer_home/auth.json
+{
+    "http-basic": {
+        "repo.magento.com": {
+            "username": "74d07c77fe347bc1bb0746dd07b19391",
+            "password": "e4132f07cff230a6bb4c1f913008b20f"
+        }
+    }
+}
+EOF
+chown daemon:daemon /bitnami/magento/var/composer_home/auth.json
+
 php -d memory_limit=-1 bin/magento setup:upgrade
 
 php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
@@ -217,13 +248,32 @@ php bin/magento deploy:mode:set developer
 ```
 
 ### Update Magento URL manually
-Using magento
+
+Using Magento
+
+```
+cd /bitnami/magento
+bin/magento config:set web/unsecure/base_url http://ecs-magento44MagentoService-1674857408.eu-west-1.elb.amazonaws.com
+```
+
+bin/magento config:set web/unsecure/base_url http://$MAGENTO_HOST/
+
+bin/magento config:show web/unsecure/base_url
+
+telnet localhost 8080
+GET / HTTP/1.1
+Host: ecs-magento44MagentoService-1674857408.eu-west-1.elb.amazonaws.com
+
+this take effect immediately
+
+cat /bitnami/magento/var/report/fda2fb351f5f24a153b0eec1598483b69e5250559f03e2d0561a365fdfe2b3d0
 
 ```
 bin/magento setup:store-config:set --base-url="http://www.magento2.com/"
 ```
 
 or using DB
+
 ```
 #Exec to the debut Task
 ecs_exec_service magento43 magento43MagentoServiceDebug magento
@@ -236,10 +286,13 @@ UPDATE core_config_data SET value = 'http://www.example.com/' WHERE path LIKE 'w
 UPDATE core_config_data SET value = 'https://www.example.com/' WHERE path LIKE 'web/secure/base_url';
 ```
 
+check conf
+
+```
 select * from core_config_data WHERE path LIKE 'web/unsecure/base_url';
 select * from core_config_data WHERE path LIKE 'web/secure/base_url';
-select * from core_config_data WHERE path LIKE 'web/url/redirect_to_base';
-
+select * from core_config_data WHERE path LIKE 'web/%';
+```
 
 ### Debug Magento Apache configuration
 
@@ -249,22 +302,16 @@ Check Magento config:
 php bin/magento config:show
 ```
 
-
 Configuration files are :
+
 ```
 # /opt/bitnami/apache/conf/httpd.conf
 # /opt/bitnami/apache/conf/extra/httpd-default.conf
 # /opt/bitnami/apache/conf/vhosts/*.conf
 # /opt/bitnami/apache/conf/bitnami/bitnami.conf
 # /opt/bitnami/apache/conf/bitnami/php.conf
-/opt/bitnami/magento/app/etc/env.php
+# /opt/bitnami/magento/app/etc/env.php
 ```
-
-grep ServerName  /opt/bitnami/apache/conf/httpd.conf
-
-43 - ecs-magento43magentoservice-2090334181.eu-west-1.elb.amazonaws.com
-re
-start apache
 
 # Troubleshoot Magento
 
@@ -284,6 +331,18 @@ source /opt/bitnami/scripts/magento/setup.sh  | more
 ```
 
 magento execute this script at startup : `/bin/bash /opt/bitnami/scripts/magento/setup.sh`
+
+## MAgento Erros logs
+
+```4635901b0f3cf830e5d49630a644dc70b4ec454dbdc4b41e18d5f0437a0320d6
+
+
+
+
+
+16:31
+I find error logs at  /bitnami/magento/var/report/1a267331567e6b7872ad4e146da68d8125937220e558650d66e2a12c063668cc
+```
 
 ## Mysql
 
@@ -343,3 +402,52 @@ The stack is configured to delete the database cluster and OpenSearch cluster, a
 ```
 
 While we can't delete an ECS Capacity Provider when associated Autoscaling Group still exists, the first attempt to delete the stack may be finished in a `DELETE_FAILED` state. A second delete attempt should properly delete everything.
+
+# others errors when booting magento
+
+## file is not writable
+
+> cache_dir "/bitnami/magento/var/page_cache" is not writable
+
+This cqn be fixed zith:
+
+```
+chown -R daemon:daemon /bitnami/magento/
+```
+
+## Exception printing is disabled by default for security reasons.
+
+>    <p>Error log record number: 1a267331567e6b7872ad4e146da68d8125937220e558650d66e2a12c063668cc</p>
+
+If you get an error like :
+
+you can find detail in
+
+```
+more /bitnami/magento/var/report/fda2fb351f5f24a153b0eec1598483b69e5250559f03e2d0561a365fdfe2b3d0</p></p>
+```
+curl -v -H "Host: $MAGENTO_HOST" localhost:8080
+
+### Unable to retrieve deployment version of static files from the file system
+
+this can be fixed with commands
+
+```
+cd /bitnami/magento
+php bin/magento setup:upgrade
+php bin/magento setup:static-content:deploy -f
+php bin/magento cache:flush
+```
+
+php bin/magento cache:clean
+
+php bin/magento cache:flush
+php bin/magento setup:upgrade
+
+php bin/magento setup:static-content:deploy -f
+
+setup:di:compile ?
+
+### error entrypoint
+
+Impossible to process constructor argument Parameter #2 [ <required> Magento\Framework\Mview\ViewFactory $viewFactory ] of Magento\Framework\Mview\TriggerCleaner class

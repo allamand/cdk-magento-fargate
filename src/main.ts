@@ -359,7 +359,7 @@ export class MagentoStack extends Stack {
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone
      */
     const magentoImage = 'public.ecr.aws/seb-demo/magento:elasticsearch-https-3';
-    new MagentoService(this, id+'MagentoService', {
+    const magento = new MagentoService(this, 'MagentoService', {
       vpc: vpc,
       cluster: cluster!,
       magentoPassword: magentoPassword,
@@ -385,7 +385,7 @@ export class MagentoStack extends Stack {
     // Add Debug Task
     const magentoDebugTask = this.node.tryGetContext('magento_debug_task');
     if (magentoDebugTask == 'yes') {
-      new MagentoService(this, id+'MagentoServiceDebug', {
+      new MagentoService(this, 'MagentoServiceDebug', {
         vpc: vpc,
         cluster: cluster!,
         magentoPassword: magentoPassword,
@@ -403,6 +403,7 @@ export class MagentoStack extends Stack {
         execBucket: execBucket,
         execLogGroup: execLogGroup,
         debug: true,
+        mainStackALB: magento.getALB(),
       });
     }
 

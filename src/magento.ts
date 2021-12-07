@@ -25,7 +25,7 @@ import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { StringParameter } from '@aws-cdk/aws-ssm';
-import { CfnOutput, Construct, Duration, Stack } from '@aws-cdk/core';
+import { CfnOutput, Construct, Duration, Stack, Tags } from '@aws-cdk/core';
 
 /**
  * construct properties for EksUtils
@@ -121,6 +121,12 @@ export interface MagentoServiceProps {
    ** @default false (TODO: how to set default to false ??)
    */
   readonly debug?: Boolean;
+
+  /*
+   ** mainStackALB is the ALB define in the main stack for magento (not the admin one)
+   ** @default none
+   */
+  readonly mainStackALB?: ApplicationLoadBalancer;
 }
 
 /*
@@ -128,9 +134,13 @@ export interface MagentoServiceProps {
  */
 export class MagentoService extends Construct {
   readonly service!: FargateService;
+  readonly alb!: ApplicationLoadBalancer;
   readonly hostName!: string;
   getService() {
     return this.service;
+  }
+  getALB() {
+    return this.alb;
   }
 
   constructor(scope: Construct, id: string, props: MagentoServiceProps) {
@@ -150,49 +160,56 @@ export class MagentoService extends Construct {
     /**
      * create ALB
      */
-    var alb = undefined;
+    const albName = 'ecs-' + props.cluster.clusterName + id;
     if (!props.debug) {
-      alb = new ApplicationLoadBalancer(this, id + 'ALB', {
+      this.alb = new ApplicationLoadBalancer(this, id + 'ALB', {
         vpc: props.vpc,
         internetFacing: true,
-        loadBalancerName: 'ecs-' + id,
+        loadBalancerName: albName,
       });
+
+      Tags.of(this.alb).add('Name', albName);
     }
 
     var certificate = undefined;
     var domainZone = undefined;
     var listener = undefined;
     // If we define a route53 hosted zone, we setup also SSL and certificate
-    if (!props.debug) {
-      if (r53DomainZone != undefined) {
-        // listener = alb.addListener(id + 'Listener', { port: 80 });
-        // certificate;
-        // domainZone;
+    if (r53DomainZone != undefined) {
+      // listener = alb.addListener(id + 'Listener', { port: 80 });
+      // certificate;
+      // domainZone;
 
-        const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
-          ? this.node.tryGetContext('route53_magento_prefix')
-          : stack.stackName;
-        const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
-          parameterName: 'CertificateArn-' + r53DomainZone,
-        }).stringValue;
-        certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
-        domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
-        this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
+      const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
+        ? this.node.tryGetContext('route53_magento_prefix')
+        : stack.stackName;
+      const certificateArn = StringParameter.fromStringParameterAttributes(this, 'CertArnParameter', {
+        parameterName: 'CertificateArn-' + r53DomainZone,
+      }).stringValue;
+      certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
+      domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
+      this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
-        listener = alb!.addListener(id + 'Listener', { port: 443 });
+      if (!props.debug) {
+        listener = this!.alb.addListener(id + 'Listener', { port: 443 });
 
         listener.addCertificates(id + 'cert', [certificate]);
         new ARecord(this, id + 'AliasRecord', {
           zone: domainZone,
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
-          target: RecordTarget.fromAlias(new LoadBalancerTarget(alb!)),
+          target: RecordTarget.fromAlias(new LoadBalancerTarget(this!.alb)),
         });
         new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
-      } else {
-        //if no route53 we will run in http mode on default LB domain name
-        listener = alb!.addListener(id + 'Listener', { port: 80 });
-        this.hostName = alb!.loadBalancerDnsName;
+      }
+    } else {
+      //if no route53 we will run in http mode on default LB domain name
+      if (!props.debug) {
+        listener = this!.alb.addListener(id + 'Listener', { port: 80 });
+        this.hostName = this!.alb.loadBalancerDnsName;
         new CfnOutput(this, id + 'URL', { value: 'http://' + this.hostName });
+      } else {
+        this.alb = props.mainStackALB!;
+        this.hostName = this!.alb.loadBalancerDnsName;
       }
     }
 
@@ -218,7 +235,12 @@ export class MagentoService extends Construct {
     const magentoEnvs: { [key: string]: string } = {
       BITNAMI_DEBUG: 'true',
       MAGENTO_USERNAME: magentoUser,
-      MAGENTO_DEPLOY_STATIC_CONTENT: 'yes',
+
+      //Only configure on Admin(debug) task
+      MAGENTO_DEPLOY_STATIC_CONTENT: props.debug ? 'yes' : 'no',
+      MAGENTO_SKIP_REINDEX: props.debug ? 'no' : 'yes',
+      MAGENTO_SKIP_BOOTSTRAP: props.debug ? 'no' : 'yes',
+
       MAGENTO_HOST: this!.hostName,
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',

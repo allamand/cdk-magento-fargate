@@ -22,8 +22,8 @@ describe:
 	aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs" --output table 
 
 connect:
-	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandMagentoService')].OutputValue" --output text)
-	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query "Stacks[*].Outputs[?contains(OutputKey, 'EcsExecCommandEksUtils')].OutputValue" --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query 'Stacks[*].Outputs[?OutputKey==`EcsExecCommandMagentoService`].OutputValue' --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query 'Stacks[*].Outputs[?OutputKey==`EcsExecCommandMagentoServiceDebug`].OutputValue' --output text)
 
 projen:
 	npx projen
