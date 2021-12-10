@@ -175,7 +175,7 @@ When Magento starts, it will execute the following command:
 cd /bitnami/magento
 bin/magento config:set web/unsecure/base_url http://ecs-magentodevmagentoservice-1199457188.eu-west-1.elb.amazonaws.com/
 
-/bitnami/magento/var/report/1a267331567e6b7872ad4e146da68d8125937220e558650d66e2a12c063668cc
+/bitnami/magento/var/report/1ab7538d9aa5309f92df556c729a9fe89c10612be583df2df42266059cf3c76b
 
 TODO: which folders to share
 chown -R daemon:daemon /bitnami/magento/
@@ -201,16 +201,28 @@ This will create a secure shell (The session is encrypted with a dedicated AWS K
 
 Example commands to install Magento sample data (https://github.com/magento/magento2-sample-data):
 
-
+cat << EOF>setup.sh
 cd /bitnami/magento
+su daemon -s /bin/bash
 bin/magento maintenance:enable
+mkdir -p /bitnami/magento/var/composer_home/
+cat <<END > /bitnami/magento/var/composer_home/auth.json
+{
+    "http-basic": {
+        "repo.magento.com": {
+            "username": "74d07c77fe347bc1bb0746dd07b19391",
+            "password": "e4132f07cff230a6bb4c1f913008b20f"
+        }
+    }
+}
+END
 php -d memory_limit=-1 bin/magento sampledata:deploy
 php -d memory_limit=-1 bin/magento setup:upgrade
 php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
 php -d memory_limit=-1 bin/magento catalog:image:resize
 chown -R daemon:daemon /bitnami/magento/
 bin/magento maintenance:disable
-
+EOF
 
 ```bash
 

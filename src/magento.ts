@@ -4,16 +4,15 @@ import { Certificate } from '@aws-cdk/aws-certificatemanager';
 import { ISecurityGroup, IVpc } from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
 import {
+  AssetImage,
   AwsLogDriver,
   AwsLogDriverMode,
-  ContainerDefinitionOptions,
-  ContainerImage,
-  FargatePlatformVersion,
+  ContainerDefinitionOptions, FargatePlatformVersion,
   FargateService,
   FargateTaskDefinition,
-  ICluster,
+  ICluster
 } from '@aws-cdk/aws-ecs';
-import { IFileSystem } from '@aws-cdk/aws-efs';
+import { AccessPoint, IFileSystem } from '@aws-cdk/aws-efs';
 import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
@@ -49,12 +48,17 @@ export interface MagentoServiceProps {
    *  Magento docker image
    *
    */
-  readonly magentoImage: string;
+  readonly magentoImage: AssetImage;
 
   /**
    * Efs FileSystem to uses for the service
    */
   readonly efsFileSystem: IFileSystem;
+
+  /**
+   * Efs AccessPoint to uses for the service
+   */
+  readonly fileSystemAccessPoint: AccessPoint
 
   /**
    * Database Cluster
@@ -224,9 +228,9 @@ export class MagentoService extends Construct {
       efsVolumeConfiguration: {
         fileSystemId: props.efsFileSystem.fileSystemId,
         transitEncryption: 'ENABLED',
-        // authorizationConfig: {
-        //   accessPointId: fileSystemAccessPoint.accessPointId,
-        // },
+        authorizationConfig: {
+          accessPointId: props.fileSystemAccessPoint.accessPointId,
+        },
       },
     });
 
@@ -245,6 +249,7 @@ export class MagentoService extends Construct {
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production', //TODO: var for this
+      //MAGENTO_MODE: 'developer', //TODO: var for this
 
       //TODO: add HTTP Cache
 
@@ -271,15 +276,23 @@ export class MagentoService extends Construct {
       MAGENTO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
       MAGENTO_DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(props.dbPassword),
       MAGENTO_ELASTICSEARCH_PASSWORD: ecs.Secret.fromSecretsManager(props.osPassword),
+
+      //Create secrets to access Magento Repo for packages
+      MAGENTO_REPO_USER: ecs.Secret.fromSecretsManager(props.magentoPassword),
+      MAGENTO_REPO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
     };
 
     var containerDef: ContainerDefinitionOptions = {
       containerName: 'magento',
-      image: ContainerImage.fromRegistry(props.magentoImage),
+      //image: ContainerImage.fromRegistry(props.magentoImage),
+      image: props.magentoImage,
       command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
+      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : ['tail', '-f', '/dev/null'],
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,
       secrets: magentoSecrets,
+      user: 'daemon',
+      //privileged: true, //Try this so that app can log to /dev/stdout -- needs to be false on Fargate
     };
     const container = taskDefinition.addContainer('magento', containerDef);
 
@@ -338,7 +351,7 @@ export class MagentoService extends Construct {
       cluster,
       serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
       taskDefinition: taskDefinition,
-      desiredCount: 1,
+      desiredCount: props.debug ? 1 : 0, //TODO: fix this
       platformVersion: FargatePlatformVersion.VERSION1_4,
       securityGroups: [props.serviceSG],
       enableExecuteCommand: true,
@@ -375,13 +388,14 @@ export class MagentoService extends Construct {
       });
 
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: 50,
+        targetUtilizationPercent: 10,
       });
 
-      scalableTarget.scaleOnRequestCount('RequestScaling', {
-        requestsPerTarget: 10000,
-        targetGroup: target,
-      });
+      // scalableTarget.scaleOnRequestCount('RequestScaling', {
+      //   requestsPerTarget: 10000,
+      //   targetGroup: target,
+      // });
+      target;
 
       //TODO : Scalable target on schedule
       //Invalid schedule expression. Details: Schedule expressions must have the following syntax: rate(<number>\s?(minutes?|hours?|days?)), cron(<cron_expression>) or at(yyyy-MM-dd'T'HH:mm:ss). (Service: AWSApplicationAutoScaling;

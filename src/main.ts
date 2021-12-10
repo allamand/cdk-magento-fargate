@@ -1,5 +1,5 @@
 import { InterfaceVpcEndpointAwsService, Peer, Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
-import { Cluster, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
+import { Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
 import { FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
@@ -7,7 +7,7 @@ import * as opensearch from '@aws-cdk/aws-opensearchservice';
 import { Credentials, DatabaseCluster, DatabaseClusterEngine } from '@aws-cdk/aws-rds';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps } from '@aws-cdk/core';
+import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps, Tags } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import { MagentoService } from './magento';
 
@@ -313,20 +313,21 @@ export class MagentoStack extends Stack {
       encrypted: true,
       removalPolicy: RemovalPolicy.DESTROY, //props.removalPolicy,
     });
+    Tags.of(efsFileSystem).add('Name', this.stackName);
 
     /* I can't activate EFS AccessPoint because Magento init scripts are doing chown on the root volume which zre forbidden when using accesPoints */
-    // const fileSystemAccessPoint = efsFileSystem.addAccessPoint('AccessPoint', {
-    //   path: '/bitnami/magento',
-    //   posixUser: {
-    //     gid: '1', // daemon user of magento docker image
-    //     uid: '1',
-    //   },
-    //   createAcl: {
-    //     ownerGid: '1',
-    //     ownerUid: '1',
-    //     permissions: '777',
-    //   },
-    // });
+    const fileSystemAccessPoint = efsFileSystem.addAccessPoint('AccessPoint', {
+      path: '/bitnami/magento',
+      posixUser: {
+        gid: '1', // daemon user of magento docker image
+        uid: '1',
+      },
+      createAcl: {
+        ownerGid: '1',
+        ownerUid: '1',
+        permissions: '777',
+      },
+    });
 
     // const privateHostedZone = new PrivateHostedZone(this, 'PrivateHostedZone', {
     //   vpc,
@@ -339,32 +340,18 @@ export class MagentoStack extends Stack {
     //   ttl: Duration.hours(1),
     // });
 
-    // Create Load Balancer
-    // const lb = new ApplicationLoadBalancer(this, 'ALB', {
-    //   vpc,
-    //   internetFacing: true,
-    //   loadBalancerName: cluster.clusterName + '-magento',
-    // });
-    // const listener = lb.addListener('Listener', { port: 443 });
-    // listener.addCertificates('cert', [certificate]);
-
-    // const record = new ARecord(this, 'AliasRecord', {
-    //   zone: domainZone,
-    //   recordName: r53MagentoPrefix + '.' + r53DomainZone,
-    //   target: RecordTarget.fromAlias(new LoadBalancerTarget(lb)),
-    // });
-    // new CfnOutput(this, 'magentoURL', { value: 'https://' + record.domainName });
-
     /*
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone
      */
-    const magentoImage = 'public.ecr.aws/seb-demo/magento:elasticsearch-https-3';
+    //const magentoImage = 'docker.io/bitnami/magento:2';
+    const magentoImage = ContainerImage.fromAsset('./docker/');
     const magento = new MagentoService(this, 'MagentoService', {
       vpc: vpc,
       cluster: cluster!,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
       efsFileSystem: efsFileSystem,
+      fileSystemAccessPoint: fileSystemAccessPoint,
       db: db,
       dbUser: DB_USER,
       dbName: DB_NAME,
@@ -391,6 +378,7 @@ export class MagentoStack extends Stack {
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
         efsFileSystem: efsFileSystem,
+        fileSystemAccessPoint: fileSystemAccessPoint,
         db: db,
         dbUser: DB_USER,
         dbName: DB_NAME,
@@ -406,7 +394,5 @@ export class MagentoStack extends Stack {
         mainStackALB: magento.getALB(),
       });
     }
-
   }
-
 }
