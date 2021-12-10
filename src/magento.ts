@@ -7,10 +7,11 @@ import {
   AssetImage,
   AwsLogDriver,
   AwsLogDriverMode,
-  ContainerDefinitionOptions, FargatePlatformVersion,
+  ContainerDefinitionOptions,
+  FargatePlatformVersion,
   FargateService,
   FargateTaskDefinition,
-  ICluster
+  ICluster,
 } from '@aws-cdk/aws-ecs';
 import { AccessPoint, IFileSystem } from '@aws-cdk/aws-efs';
 import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
@@ -58,7 +59,7 @@ export interface MagentoServiceProps {
   /**
    * Efs AccessPoint to uses for the service
    */
-  readonly fileSystemAccessPoint: AccessPoint
+  readonly fileSystemAccessPoint: AccessPoint;
 
   /**
    * Database Cluster
@@ -272,21 +273,27 @@ export class MagentoService extends Construct {
 
       PHP_MEMORY_LIMIT: '2G',
     };
+        const magentoMarketplaceSecrets = secretsmanager.Secret.fromSecretNameV2(
+          this,
+          id + 'magento-secrets',
+          'MAGENTO_MARKETPLACE',
+        );
+
     const magentoSecrets = {
       MAGENTO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
       MAGENTO_DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(props.dbPassword),
       MAGENTO_ELASTICSEARCH_PASSWORD: ecs.Secret.fromSecretsManager(props.osPassword),
 
       //Create secrets to access Magento Repo for packages
-      MAGENTO_REPO_USER: ecs.Secret.fromSecretsManager(props.magentoPassword),
-      MAGENTO_REPO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
+      MAGENTO_MARKETPLACE_PUBLIC_KEY: ecs.Secret.fromSecretsManager(magentoMarketplaceSecrets, 'public-key'),
+      MAGENTO_MARKETPLACE_PRIVATE_KEY: ecs.Secret.fromSecretsManager(magentoMarketplaceSecrets, 'private-key'),
     };
 
     var containerDef: ContainerDefinitionOptions = {
       containerName: 'magento',
       //image: ContainerImage.fromRegistry(props.magentoImage),
       image: props.magentoImage,
-      command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
+      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
       //command: props.debug == true ? ['tail', '-f', '/dev/null'] : ['tail', '-f', '/dev/null'],
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,

@@ -8,11 +8,13 @@ export MAGENTO_SKIP_REINDEX=yes
 su daemon -s /bin/bash
 /opt/bitnami/scripts/magento/entrypoint.sh /opt/bitnami/scripts/magento/run.sh
 
+chmod o+w "$(readlink /dev/stdout)" "$(readlink /dev/stderr)"
+
 curl -H "Host: $MAGENTO_HOST" localhost:8080
 curl -H "Host: $MAGENTO_HOST" https://$MAGENTO_HOST
 
 
-/bitnami/magento/var/report/79e20af44649f3d9e60e0be61e1bb2f9f6c2cca54fc4ebe46e5e75a7e9f2935a</p>
+/bitnami/magento/var/report/9a30478bd4f535d65604687d75bab81ab0d2a5ed10b832445600518c14e55afa</p></p>
 
 
 disable cron
@@ -25,36 +27,20 @@ sed -i 's/        magento_execute setup:upgrade/        magento_execute setup:up
 grep memory_limit /opt/bitnami/php/etc/php.ini
 $ sed -i 's/memory_limit = .*/memory_limit = 2G/' /opt/bitnami/php/etc/php.ini
 
-su daemon -s /bin/bash
-cat << EOF> setup.sh
-cd /bitnami/magento
-bin/magento maintenance:enable
-mkdir -p /bitnami/magento/var/composer_home/
-cat <<END > /bitnami/magento/var/composer_home/auth.json
-{
-    "http-basic": {
-        "repo.magento.com": {
-            "username": "74d07c77fe347bc1bb0746dd07b19391",
-            "password": "e4132f07cff230a6bb4c1f913008b20f"
-        }
-    }
-}
-END
-chown -R daemon:daemon /bitnami/magento/var/composer_home/
-#rm -rf /opt/bitnami/magento/var/cache/*
-#rm -rf /opt/bitnami/magento/var/page_cache/*
-#rm -rf /opt/bitnami/magento/generated/*
-php -d memory_limit=-1 bin/magento sampledata:deploy && \
-php -d memory_limit=-1 bin/magento setup:upgrade && \
-php -d memory_limit=-1 bin/magento setup:di:compile && \
-php -d memory_limit=-1 bin/magento setup:static-content:deploy -f && \
-php -d memory_limit=-1 bin/magento catalog:image:resize
-#php bin/magento cache:flush
-chown -R daemon:daemon /bitnami/magento/
-bin/magento maintenance:disable
-EOF
-chmod 755 setup.sh
+Please re-run Magento compile command. Use the command "setup:di:compile"
 
+
+su daemon -s /bin/bash
+cd /bitnami/magento
 php bin/magento setup:upgrade && \
 php bin/magento setup:static-content:deploy -f && \
 php bin/magento cache:flush
+
+su daemon -s /bin/bash
+cd /bitnami/magento
+php -d memory_limit=-1 bin/magento setup:upgrade && \
+php -d memory_limit=-1 bin/magento sampledata:deploy && \
+php -d memory_limit=-1 bin/magento setup:static-content:deploy -f && \
+php -d memory_limit=-1 bin/magento catalog:image:resize
+php -d memory_limit=-1 bin/magento cache:flush
+bin/magento maintenance:disable
