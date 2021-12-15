@@ -13,7 +13,7 @@ import {
   FargateTaskDefinition,
   ICluster,
 } from '@aws-cdk/aws-ecs';
-import { AccessPoint, IFileSystem } from '@aws-cdk/aws-efs';
+import { AccessPoint, FileSystem } from '@aws-cdk/aws-efs';
 import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
@@ -52,9 +52,13 @@ export interface MagentoServiceProps {
   readonly magentoImage: AssetImage;
 
   /**
+   * Do we use EFS ?
+   */
+  readonly useEFS: boolean;
+  /**
    * Efs FileSystem to uses for the service
    */
-  readonly efsFileSystem: IFileSystem;
+  readonly efsFileSystem: FileSystem;
 
   /**
    * Efs AccessPoint to uses for the service
@@ -224,17 +228,18 @@ export class MagentoService extends Construct {
       memoryLimitMiB: 30720,
     });
 
-    taskDefinition.addVolume({
-      name: 'MagentoEfsVolume',
-      efsVolumeConfiguration: {
-        fileSystemId: props.efsFileSystem.fileSystemId,
-        transitEncryption: 'ENABLED',
-        authorizationConfig: {
-          accessPointId: props.fileSystemAccessPoint.accessPointId,
+    if (props.useEFS && props.efsFileSystem) {
+      taskDefinition.addVolume({
+        name: 'MagentoEfsVolume',
+        efsVolumeConfiguration: {
+          fileSystemId: props.efsFileSystem.fileSystemId,
+          transitEncryption: 'ENABLED',
+          authorizationConfig: {
+            accessPointId: props.fileSystemAccessPoint!.accessPointId,
+          },
         },
-      },
-    });
-
+      });
+    }
     const magentoUser = this.node.tryGetContext('magento_user') ? this.node.tryGetContext('magento_user') : 'magento';
 
     const magentoEnvs: { [key: string]: string } = {
@@ -250,7 +255,6 @@ export class MagentoService extends Construct {
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production', //TODO: var for this
-      //MAGENTO_MODE: 'developer', //TODO: var for this
 
       //TODO: add HTTP Cache
 
@@ -273,11 +277,11 @@ export class MagentoService extends Construct {
 
       PHP_MEMORY_LIMIT: '2G',
     };
-        const magentoMarketplaceSecrets = secretsmanager.Secret.fromSecretNameV2(
-          this,
-          id + 'magento-secrets',
-          'MAGENTO_MARKETPLACE',
-        );
+    const magentoMarketplaceSecrets = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      id + 'magento-secrets',
+      'MAGENTO_MARKETPLACE',
+    );
 
     const magentoSecrets = {
       MAGENTO_PASSWORD: ecs.Secret.fromSecretsManager(props.magentoPassword),
@@ -293,7 +297,7 @@ export class MagentoService extends Construct {
       containerName: 'magento',
       //image: ContainerImage.fromRegistry(props.magentoImage),
       image: props.magentoImage,
-      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
+      command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
       //command: props.debug == true ? ['tail', '-f', '/dev/null'] : ['tail', '-f', '/dev/null'],
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,
@@ -306,11 +310,13 @@ export class MagentoService extends Construct {
     container.addPortMappings({
       containerPort: 8080,
     });
-    container.addMountPoints({
-      readOnly: false,
-      containerPath: '/bitnami/magento',
-      sourceVolume: 'MagentoEfsVolume',
-    });
+    if (props.useEFS) {
+      container.addMountPoints({
+        readOnly: false,
+        containerPath: '/bitnami/magento',
+        sourceVolume: 'MagentoEfsVolume',
+      });
+    }
 
     //container.addToExecutionPolicy(
     taskDefinition.addToExecutionRolePolicy(
@@ -326,19 +332,21 @@ export class MagentoService extends Construct {
       }),
     );
 
-    taskDefinition.addToExecutionRolePolicy(
-      new PolicyStatement({
-        actions: ['elasticfilesystem:ClientMount', 'elasticfilesystem:ClientWrite'],
-        resources: [
-          stack.formatArn({
-            service: 'elasticfilesystem',
-            resource: 'file-system',
-            sep: '/',
-            resourceName: props.efsFileSystem.fileSystemId,
-          }),
-        ],
-      }),
-    );
+    if (props.useEFS && props.efsFileSystem) {
+      taskDefinition.addToExecutionRolePolicy(
+        new PolicyStatement({
+          actions: ['elasticfilesystem:ClientMount', 'elasticfilesystem:ClientWrite'],
+          resources: [
+            stack.formatArn({
+              service: 'elasticfilesystem',
+              resource: 'file-system',
+              sep: '/',
+              resourceName: props.efsFileSystem!.fileSystemId,
+            }),
+          ],
+        }),
+      );
+    }
 
     /*
      * Add metrics sidecar
@@ -358,11 +366,11 @@ export class MagentoService extends Construct {
       cluster,
       serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
       taskDefinition: taskDefinition,
-      desiredCount: props.debug ? 1 : 0, //TODO: fix this
+      //desiredCount: props.debug ? 1 : 0, //TODO: fix this
       platformVersion: FargatePlatformVersion.VERSION1_4,
       securityGroups: [props.serviceSG],
       enableExecuteCommand: true,
-      healthCheckGracePeriod: !props.debug ? Duration.hours(1) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
+      healthCheckGracePeriod: !props.debug ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
     });
 
     new CfnOutput(stack, 'EcsExecCommand' + id, {

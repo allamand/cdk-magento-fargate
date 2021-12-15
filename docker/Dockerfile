@@ -1,11 +1,18 @@
-FROM bitnami/magento
+#FROM bitnami/magento
+FROM public.ecr.aws/seb-demo/magento:latest
 LABEL maintainer "Bitnami <containers@bitnami.com>"
 
 ## Install 'vim'
-RUN install_packages vim
+#RUN install_packages vim.p
+
+
+USER root
 RUN chown -R daemon:daemon /opt/bitnami/
+RUN chown -R daemon:daemon /bitnami/magento
 
 COPY setup.sh /
+#Custom Entrypoint to update Magento Host
+COPY entrypoint.sh /opt/bitnami/scripts/magento/
 ## Enable mod_ratelimit module
 #RUN sed -i -r 's/#LoadModule ratelimit_module/LoadModule ratelimit_module/' /opt/bitnami/apache/conf/httpd.conf
 

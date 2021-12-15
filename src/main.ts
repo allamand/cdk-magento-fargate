@@ -1,6 +1,6 @@
 import { InterfaceVpcEndpointAwsService, Peer, Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
 import { Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
-import { FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
+import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
 import * as opensearch from '@aws-cdk/aws-opensearchservice';
@@ -297,38 +297,46 @@ export class MagentoStack extends Stack {
     new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
     process.env.elasticsearch_host = osDomain.domainEndpoint;
 
-    /*
-     ** Create EFS File system
-     */
-    const efsFileSystem = new FileSystem(this, 'FileSystem', {
-      vpc,
-      // vpcSubnets: {
-      //   subnetType: SubnetType.PRIVATE_ISOLATED,
-      // },
-      securityGroup: efsFileSystemSecurityGroup,
-      performanceMode: PerformanceMode.GENERAL_PURPOSE,
-      lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
-      throughputMode: ThroughputMode.PROVISIONED,
-      provisionedThroughputPerSecond: Size.mebibytes(1024),
-      encrypted: true,
-      removalPolicy: RemovalPolicy.DESTROY, //props.removalPolicy,
-    });
-    Tags.of(efsFileSystem).add('Name', this.stackName);
+    var useEFS: boolean = false; // By default I don't want EFS, it's too slow
+    const contextUseEFS = this.node.tryGetContext('useEFS');
+    if (contextUseEFS != undefined) {
+      useEFS = contextUseEFS;
+    }
+    var efsFileSystem: FileSystem;
+    var fileSystemAccessPoint: AccessPoint;
+    if (useEFS) {
+      /*
+       ** Create EFS File system
+       */
+      efsFileSystem = new FileSystem(this, 'FileSystem', {
+        vpc,
+        // vpcSubnets: {
+        //   subnetType: SubnetType.PRIVATE_ISOLATED,
+        // },
+        securityGroup: efsFileSystemSecurityGroup,
+        performanceMode: PerformanceMode.GENERAL_PURPOSE,
+        lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
+        throughputMode: ThroughputMode.PROVISIONED,
+        provisionedThroughputPerSecond: Size.mebibytes(1024),
+        encrypted: true,
+        removalPolicy: RemovalPolicy.DESTROY, //props.removalPolicy,
+      });
+      Tags.of(efsFileSystem).add('Name', this.stackName);
 
-    /* I can't activate EFS AccessPoint because Magento init scripts are doing chown on the root volume which zre forbidden when using accesPoints */
-    const fileSystemAccessPoint = efsFileSystem.addAccessPoint('AccessPoint', {
-      path: '/bitnami/magento',
-      posixUser: {
-        gid: '1', // daemon user of magento docker image
-        uid: '1',
-      },
-      createAcl: {
-        ownerGid: '1',
-        ownerUid: '1',
-        permissions: '777',
-      },
-    });
-
+      /* I can't activate EFS AccessPoint because Magento init scripts are doing chown on the root volume which zre forbidden when using accesPoints */
+      fileSystemAccessPoint = efsFileSystem.addAccessPoint('AccessPoint', {
+        path: '/bitnami/magento',
+        posixUser: {
+          gid: '1', // daemon user of magento docker image
+          uid: '1',
+        },
+        createAcl: {
+          ownerGid: '1',
+          ownerUid: '1',
+          permissions: '777',
+        },
+      });
+    }
     // const privateHostedZone = new PrivateHostedZone(this, 'PrivateHostedZone', {
     //   vpc,
     //   zoneName: `${r53MagentoPrefix}.private`,
@@ -350,8 +358,9 @@ export class MagentoStack extends Stack {
       cluster: cluster!,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
-      efsFileSystem: efsFileSystem,
-      fileSystemAccessPoint: fileSystemAccessPoint,
+      useEFS: useEFS,
+      efsFileSystem: efsFileSystem!,
+      fileSystemAccessPoint: fileSystemAccessPoint!,
       db: db,
       dbUser: DB_USER,
       dbName: DB_NAME,
@@ -377,8 +386,9 @@ export class MagentoStack extends Stack {
         cluster: cluster!,
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
-        efsFileSystem: efsFileSystem,
-        fileSystemAccessPoint: fileSystemAccessPoint,
+        useEFS: useEFS,
+        efsFileSystem: efsFileSystem!,
+        fileSystemAccessPoint: fileSystemAccessPoint!,
         db: db,
         dbUser: DB_USER,
         dbName: DB_NAME,

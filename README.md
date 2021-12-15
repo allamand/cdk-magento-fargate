@@ -264,32 +264,22 @@ php bin/magento deploy:mode:set developer
 Using Magento
 
 ```
+su daemon -s /bin/bash
 cd /bitnami/magento
 bin/magento config:set web/unsecure/base_url http://ecs-magento44MagentoService-1674857408.eu-west-1.elb.amazonaws.com
 ```
 
+bin/magento config:set web/secure/base_url https://$MAGENTO_HOST/
 bin/magento config:set web/unsecure/base_url http://$MAGENTO_HOST/
 
+bin/magento config:show web/secure/base_url
 bin/magento config:show web/unsecure/base_url
 
-telnet localhost 8080
-GET / HTTP/1.1
-Host: ecs-magento44MagentoService-1674857408.eu-west-1.elb.amazonaws.com
+Test it:
+curl -H "Host: $MAGENTO_HOST" localhost:8080
 
-this take effect immediately
-
-cat /bitnami/magento/var/report/fda2fb351f5f24a153b0eec1598483b69e5250559f03e2d0561a365fdfe2b3d0
-
+Check in DB
 ```
-bin/magento setup:store-config:set --base-url="http://www.magento2.com/"
-```
-
-or using DB
-
-```
-#Exec to the debut Task
-ecs_exec_service magento43 magento43MagentoServiceDebug magento
-
 #Connect to the DB
 mysql -h $MAGENTO_DATABASE_HOST -u$MAGENTO_DATABASE_USER -p$MAGENTO_DATABASE_PASSWORD -D $MAGENTO_DATABASE_NAME
 

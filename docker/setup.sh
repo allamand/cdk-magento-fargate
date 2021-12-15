@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 cd /bitnami/magento
 bin/magento maintenance:enable
 mkdir -p /bitnami/magento/var/composer_home/
@@ -25,3 +26,4 @@ php -d memory_limit=-1 bin/magento catalog:image:resize
 #php bin/magento cache:flush
 #chown -R daemon:daemon /bitnami/magento/
 bin/magento maintenance:disable
+set +x

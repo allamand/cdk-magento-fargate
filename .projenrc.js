@@ -50,8 +50,9 @@ const project = new AwsCdkTypeScriptApp({
   },
 
   context: {
-    vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
+    //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     enablePrivateLink: 'false', // this parameter seems to works only one
+    useEFS: false,
 
     //os_domain: 'magento-cdk4', // default to $CDK_STACK_NAME
     os_master_user_name: 'magento-master-os',
