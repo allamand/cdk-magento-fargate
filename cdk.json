@@ -1,11 +1,10 @@
 {
-  "app": "npx ts-node --prefer-ts-exts src/main.ts",
+  "app": "npx ts-node --prefer-ts-exts src/integ.ts",
   "context": {
-    "vpc_tag_name": "ecsworkshop-base/BaseVPC",
     "enablePrivateLink": "false",
+    "useEFS": false,
     "os_master_user_name": "magento-master-os",
     "db_user": "magentodbuser",
-    "route53_domain_zone": "ecs.demo3.allamand.com",
     "magento_user": "user1",
     "magento_debug_task": "yes"
   },

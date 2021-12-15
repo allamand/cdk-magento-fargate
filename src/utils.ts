@@ -1,4 +1,4 @@
-import { Construct, Stack } from "@aws-cdk/core";
+import { Construct, Stack } from '@aws-cdk/core';
 
 
 function isContextAvailable(scope: Construct, key: string) {
