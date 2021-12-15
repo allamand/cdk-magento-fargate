@@ -163,8 +163,6 @@ export class MagentoService extends Construct {
      */
     // Lookup pre-existing TLS certificate for our magento service:
     const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
-    // ? this.node.tryGetContext('route53_domain_zone')
-    // : 'magento.mydomain.com';
 
     /**
      * create ALB
@@ -185,9 +183,7 @@ export class MagentoService extends Construct {
     var listener = undefined;
     // If we define a route53 hosted zone, we setup also SSL and certificate
     if (r53DomainZone != undefined) {
-      // listener = alb.addListener(id + 'Listener', { port: 80 });
-      // certificate;
-      // domainZone;
+
 
       const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
         ? this.node.tryGetContext('route53_magento_prefix')
@@ -254,20 +250,12 @@ export class MagentoService extends Construct {
       MAGENTO_HOST: this!.hostName,
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
-      MAGENTO_MODE: 'production', //TODO: var for this
-
-      //TODO: add HTTP Cache
+      MAGENTO_MODE: 'production', 
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
       MAGENTO_DATABASE_USER: props.dbUser,
       MAGENTO_DATABASE_NAME: props.dbName,
-
-      // // MAGENTO_CLIENT_DATABASE_HOST: db.clusterEndpoint.hostname,
-      // // MAGENTO_CLIENT_DATABASE_PORT_NUMBER: '3306',
-      // // MAGENTO_CLIENT_DATABASE_USER: DB_USER,
-      // // MAGENTO_CLIENT_DATABASE_PASSWORD: DB_PASSWORD,
-      // // MAGENTO_CLIENT_DATABASE_NAME: DB_NAME,
 
       ELASTICSEARCH_HOST: props.osDomain.domainEndpoint,
       ELASTICSEARCH_PORT_NUMBER: '443',
@@ -297,13 +285,12 @@ export class MagentoService extends Construct {
       containerName: 'magento',
       //image: ContainerImage.fromRegistry(props.magentoImage),
       image: props.magentoImage,
-      command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
-      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : ['tail', '-f', '/dev/null'],
+      //replace command to /dev/null in case of startup problem you want to debug:
+      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,
       secrets: magentoSecrets,
       user: 'daemon',
-      //privileged: true, //Try this so that app can log to /dev/stdout -- needs to be false on Fargate
     };
     const container = taskDefinition.addContainer('magento', containerDef);
 
@@ -403,7 +390,7 @@ export class MagentoService extends Construct {
       });
 
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: 10,
+        targetUtilizationPercent: 50,
       });
 
       // scalableTarget.scaleOnRequestCount('RequestScaling', {
@@ -426,7 +413,6 @@ export class MagentoService extends Construct {
       // });
     }
 
-    //new CfnOutput(this, 'magentoURL', { value: 'https://' + this.service.loadBalancer.loadBalancerDnsName });
     new CfnOutput(this, 'magentoURL', { value: 'https://' + this!.hostName });
   }
 }

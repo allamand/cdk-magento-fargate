@@ -4,16 +4,7 @@ const project = new AwsCdkTypeScriptApp({
   defaultReleaseBranch: 'main',
   name: 'cdk-magento-fargate',
   appEntrypoint: 'integ.ts',
-  // workflowBootstrapSteps: [
-  //   {
-  //     name: 'build',
-  //     env: {
-  //       ACCOUNT: '1234567890',
-  //       REGION: 'us-east-1',
-  //     },
-  //     run: 'echo $ACCOUNT $REGION',
-  //   },
-  // ],
+
   cdkDependencies: [
     '@aws-cdk/aws-certificatemanager',
     '@aws-cdk/aws-ec2',
@@ -42,8 +33,7 @@ const project = new AwsCdkTypeScriptApp({
   cdkTestDependencies: ['@aws-cdk/assert'],
 
   dependabot: false,
-  //projenUpgradeSecret: 'YARN_UPGRADE_TOKEN',
-  //autoApproveUpgrades: true,
+
   autoApproveOptions: {
     secret: 'GITHUB_TOKEN',
     allowedUsernames: ['github-actions', 'github-actions[bot]', 'allamand'],
@@ -60,17 +50,13 @@ const project = new AwsCdkTypeScriptApp({
     //db_name: 'magento3', // default to env $CDK_STACK_NAME
     db_user: 'magentodbuser',
 
-    route53_domain_zone: 'ecs.demo3.allamand.com',
-    //route53_magento_prefix: 'magento4', // default to $CDK_STACK_NAME
-    //route53_eksutils_prefix: 'eksutils4', // default to $CDK_STACK_NAME-eksutils
+    //route53_domain_zone: 'ecs.demo3.allamand.com',
+    //route53_magento_prefix: 'magento', // default to $CDK_STACK_NAME
     magento_user: 'user1',
     magento_debug_task: 'yes',
   },
 
-  //releaseEveryCommit: true,
-  //releaseToNpm: true,
-
-  gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js'],
+  gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD'],
 
   // cdkDependencies: undefined,  /* Which AWS CDK modules (those that start with "@aws-cdk/") this app uses. */
   // deps: [],                    /* Runtime dependencies of this module. */
@@ -79,10 +65,5 @@ const project = new AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
-
-// project.buildWorkflow.file.addOverride('jobs.build.env', {
-//   CDK_DEFAULT_ACCOUNT: '${{secrets.CDK_DEFAULT_ACCOUNT}}',
-//   CDK_DEFAULT_REGION: '${{secrets.CDK_DEFAULT_REGION}}',
-// });
 
 project.synth();

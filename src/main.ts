@@ -27,12 +27,6 @@ export class MagentoStack extends Stack {
     //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-patterns-readme.html#use-the-remove_default_desired_count-feature-flag
     stack.node.setContext(cxapi.ECS_REMOVE_DEFAULT_DESIRED_COUNT, true);
 
-    //Check for mandatory context to be set-ups - route53_domain_zone is not mandatory anymore
-    // const requiredContextVariables = ['route53_domain_zone'];
-    // if (this != undefined) {
-    //   requiredContextVariables.map((v) => throwIfNotAvailable(this, v));
-    // }
-
     //Create or Reuse VPC
     let stackName = this.stackName;
     var vpc = undefined;
@@ -241,23 +235,13 @@ export class MagentoStack extends Stack {
       ? this.node.tryGetContext('os_master_user_name')
       : 'magento-os-master';
 
-    /*
-      ** I usr my own password because I have issues with generated ones
-      ** Could not validate a connection to Elasticsearch. Could not parse URI: "htt
-  ps://magento-master-os:[#R./kciPtaY_hR=bp{@RO*Z4!}\#9Mv@search-magento-cdk2
-  -rgepbodbvredpleax3puvmmaui.eu-west-1.es.amazonaws.com:443"
-      */
-    // const OS_MASTER_USER_PASSWORD = this.node.tryGetContext('os_master_user_password')
-    //   ? this.node.tryGetContext('os_master_user_password')
-    //   : 'P@sswordPlay77';
-
     const osDomain = new opensearch.Domain(this, 'Domain', {
       version: opensearch.EngineVersion.OPENSEARCH_1_0,
       domainName: OS_DOMAIN,
-      //accessPolicies: [osPolicy], // Default No access policies
+      //accessPolicies: [osPolicy], // Default No access policies for magento
       removalPolicy: RemovalPolicy.DESTROY,
       securityGroups: [openSearchSG],
-      //default 1 r5.large.search datanode; no dedicated master nodes
+      //If you want more capacity for Opensearch . default 1 instance r5.large.search datanode; no dedicated master nodes
       // capacity: {
       //   masterNodes: 5,
       //   dataNodes: 20,
@@ -265,7 +249,7 @@ export class MagentoStack extends Stack {
       ebs: {
         volumeSize: 20,
       },
-      //if you need
+      //if you need, else only 1 az
       // zoneAwareness: {
       //   availabilityZoneCount: 3,
       // },
@@ -283,9 +267,7 @@ export class MagentoStack extends Stack {
       },
       fineGrainedAccessControl: {
         masterUserName: OS_MASTER_USER_NAME,
-        /* if generateed password, it pause problem with magento bash scripts install ex pwd: -Yqt(=o+[gYtP@G{="MYW5ln+lx(`+qH  */
         masterUserPassword: magentoOpensearchAdminPassword.secretValue,
-        //masterUserPassword: OS_MASTER_USER_PASSWORD,
       },
       useUnsignedBasicAuth: true,
       enableVersionUpgrade: true,
@@ -293,7 +275,6 @@ export class MagentoStack extends Stack {
 
     new CfnOutput(this, 'EsDomainEndpoint', { value: osDomain.domainEndpoint });
     new CfnOutput(this, 'EsDomainName', { value: osDomain.domainName });
-    //new CfnOutput(this, 'EsMasterUserPassword', { value: osDomain.masterUserPassword!.toString() });
     new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
     process.env.elasticsearch_host = osDomain.domainEndpoint;
 
@@ -310,9 +291,6 @@ export class MagentoStack extends Stack {
        */
       efsFileSystem = new FileSystem(this, 'FileSystem', {
         vpc,
-        // vpcSubnets: {
-        //   subnetType: SubnetType.PRIVATE_ISOLATED,
-        // },
         securityGroup: efsFileSystemSecurityGroup,
         performanceMode: PerformanceMode.GENERAL_PURPOSE,
         lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
@@ -337,16 +315,6 @@ export class MagentoStack extends Stack {
         },
       });
     }
-    // const privateHostedZone = new PrivateHostedZone(this, 'PrivateHostedZone', {
-    //   vpc,
-    //   zoneName: `${r53MagentoPrefix}.private`,
-    // });
-    // const fileSystemEndpointPrivateDnsRecord = new CnameRecord(this, 'FileSystemEndpointPrivateDnsRecord', {
-    //   zone: privateHostedZone,
-    //   recordName: `nfs.${privateHostedZone.zoneName}`,
-    //   domainName: `${fileSystem.fileSystemId}.efs.${this.region}.amazonaws.com`,
-    //   ttl: Duration.hours(1),
-    // });
 
     /*
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone

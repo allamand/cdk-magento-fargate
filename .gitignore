@@ -34,6 +34,7 @@ cdk.out
 cdk.context.json
 *.d.ts
 *.js
+CMD
 !/.projenrc.js
 /test-reports/
 junit.xml

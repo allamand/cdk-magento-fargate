@@ -5,7 +5,6 @@
     "useEFS": false,
     "os_master_user_name": "magento-master-os",
     "db_user": "magentodbuser",
-    "route53_domain_zone": "ecs.demo3.allamand.com",
     "magento_user": "user1",
     "magento_debug_task": "yes"
   },
