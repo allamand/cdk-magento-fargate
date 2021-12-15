@@ -250,7 +250,7 @@ export class MagentoService extends Construct {
       MAGENTO_HOST: this!.hostName,
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
-      MAGENTO_MODE: 'production', 
+      MAGENTO_MODE: 'production',
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',

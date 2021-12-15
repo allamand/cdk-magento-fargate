@@ -1116,7 +1116,6 @@ Object {
           "MaximumPercent": 200,
           "MinimumHealthyPercent": 50,
         },
-        "DesiredCount": 1,
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
         "LaunchType": "FARGATE",
@@ -1250,7 +1249,7 @@ Object {
                   Object {
                     "Ref": "AWS::URLSuffix",
                   },
-                  "/aws-cdk/assets:60e983253b2166cf616d17be1a491e8e9fb54dd86299d033f87737031c6433cd",
+                  "/aws-cdk/assets:4c3ca5524f5a7e501488dc4b0f2ceff8ac21c8deeaa5b2a68c2f4efb5533c429",
                 ],
               ],
             },
@@ -1351,6 +1350,22 @@ Object {
             "Arn",
           ],
         },
+        "Volumes": Array [
+          Object {
+            "EfsVolumeConfiguration": Object {
+              "AuthorizationConfig": Object {
+                "AccessPointId": Object {
+                  "Ref": "FileSystemAccessPointF8178182",
+                },
+              },
+              "FileSystemId": Object {
+                "Ref": "FileSystem8A8E25C0",
+              },
+              "TransitEncryption": "ENABLED",
+            },
+            "Name": "MagentoEfsVolume",
+          },
+        ],
       },
       "Type": "AWS::ECS::TaskDefinition",
     },
@@ -1471,6 +1486,28 @@ Object {
               ],
               "Effect": "Allow",
               "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "elasticfilesystem:ClientMount",
+                "elasticfilesystem:ClientWrite",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":elasticfilesystem:us-east-1:1234567890:file-system/",
+                    Object {
+                      "Ref": "FileSystem8A8E25C0",
+                    },
+                  ],
+                ],
+              },
             },
           ],
           "Version": "2012-10-17",
@@ -1838,10 +1875,9 @@ Object {
           "MaximumPercent": 200,
           "MinimumHealthyPercent": 50,
         },
-        "DesiredCount": 0,
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
-        "HealthCheckGracePeriodSeconds": 3600,
+        "HealthCheckGracePeriodSeconds": 120,
         "LaunchType": "FARGATE",
         "LoadBalancers": Array [
           Object {
@@ -1931,7 +1967,7 @@ Object {
           "PredefinedMetricSpecification": Object {
             "PredefinedMetricType": "ECSServiceAverageCPUUtilization",
           },
-          "TargetValue": 10,
+          "TargetValue": 50,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -2037,7 +2073,7 @@ Object {
                   Object {
                     "Ref": "AWS::URLSuffix",
                   },
-                  "/aws-cdk/assets:60e983253b2166cf616d17be1a491e8e9fb54dd86299d033f87737031c6433cd",
+                  "/aws-cdk/assets:4c3ca5524f5a7e501488dc4b0f2ceff8ac21c8deeaa5b2a68c2f4efb5533c429",
                 ],
               ],
             },
@@ -2138,6 +2174,22 @@ Object {
             "Arn",
           ],
         },
+        "Volumes": Array [
+          Object {
+            "EfsVolumeConfiguration": Object {
+              "AuthorizationConfig": Object {
+                "AccessPointId": Object {
+                  "Ref": "FileSystemAccessPointF8178182",
+                },
+              },
+              "FileSystemId": Object {
+                "Ref": "FileSystem8A8E25C0",
+              },
+              "TransitEncryption": "ENABLED",
+            },
+            "Name": "MagentoEfsVolume",
+          },
+        ],
       },
       "Type": "AWS::ECS::TaskDefinition",
     },
@@ -2258,6 +2310,28 @@ Object {
               ],
               "Effect": "Allow",
               "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "elasticfilesystem:ClientMount",
+                "elasticfilesystem:ClientWrite",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":elasticfilesystem:us-east-1:1234567890:file-system/",
+                    Object {
+                      "Ref": "FileSystem8A8E25C0",
+                    },
+                  ],
+                ],
+              },
             },
           ],
           "Version": "2012-10-17",
@@ -4113,7 +4187,6 @@ Object {
           "MaximumPercent": 200,
           "MinimumHealthyPercent": 50,
         },
-        "DesiredCount": 1,
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
         "LaunchType": "FARGATE",
@@ -4247,7 +4320,7 @@ Object {
                   Object {
                     "Ref": "AWS::URLSuffix",
                   },
-                  "/aws-cdk/assets:60e983253b2166cf616d17be1a491e8e9fb54dd86299d033f87737031c6433cd",
+                  "/aws-cdk/assets:4c3ca5524f5a7e501488dc4b0f2ceff8ac21c8deeaa5b2a68c2f4efb5533c429",
                 ],
               ],
             },
@@ -4828,10 +4901,9 @@ Object {
           "MaximumPercent": 200,
           "MinimumHealthyPercent": 50,
         },
-        "DesiredCount": 0,
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
-        "HealthCheckGracePeriodSeconds": 3600,
+        "HealthCheckGracePeriodSeconds": 120,
         "LaunchType": "FARGATE",
         "LoadBalancers": Array [
           Object {
@@ -4921,7 +4993,7 @@ Object {
           "PredefinedMetricSpecification": Object {
             "PredefinedMetricType": "ECSServiceAverageCPUUtilization",
           },
-          "TargetValue": 10,
+          "TargetValue": 50,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -5027,7 +5099,7 @@ Object {
                   Object {
                     "Ref": "AWS::URLSuffix",
                   },
-                  "/aws-cdk/assets:60e983253b2166cf616d17be1a491e8e9fb54dd86299d033f87737031c6433cd",
+                  "/aws-cdk/assets:4c3ca5524f5a7e501488dc4b0f2ceff8ac21c8deeaa5b2a68c2f4efb5533c429",
                 ],
               ],
             },
