@@ -1,5 +1,5 @@
 import { InterfaceVpcEndpointAwsService, Peer, Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
-import { Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
+import { AssetImage, Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
@@ -280,8 +280,8 @@ export class MagentoStack extends Stack {
 
     var useEFS: boolean = false; // By default I don't want EFS, it's too slow
     const contextUseEFS = this.node.tryGetContext('useEFS');
-    if (contextUseEFS != undefined) {
-      useEFS = contextUseEFS;
+    if (contextUseEFS == 'yes') {
+      useEFS = true;
     }
     var efsFileSystem: FileSystem;
     var fileSystemAccessPoint: AccessPoint;
@@ -319,8 +319,13 @@ export class MagentoStack extends Stack {
     /*
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone
      */
-    //const magentoImage = 'docker.io/bitnami/magento:2';
-    const magentoImage = ContainerImage.fromAsset('./docker/');
+    var magentoImage: AssetImage;
+    if (useEFS) {
+      magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile' });
+    } else {
+      magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile.noefs' });
+    }
+
     const magento = new MagentoService(this, 'MagentoService', {
       vpc: vpc,
       cluster: cluster!,
@@ -346,10 +351,11 @@ export class MagentoStack extends Stack {
     openSearchSG.addIngressRule(serviceSG, Port.allTraffic(), 'allow traffic fom ECS service');
     serviceSG.addIngressRule(openSearchSG, Port.allTraffic(), 'allow traffic fom Opensearch');
 
-    // Add Debug Task
-    const magentoDebugTask = this.node.tryGetContext('magento_debug_task');
-    if (magentoDebugTask == 'yes') {
-      new MagentoService(this, 'MagentoServiceDebug', {
+    // Add Magento Admin Task
+    const magentoAdminTask = this.node.tryGetContext('magento_admin_task');
+    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug') ? this.node.tryGetContext('magento_admin_task_debug') : 'no';
+    if (magentoAdminTask == 'yes') {
+      new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,
         cluster: cluster!,
         magentoPassword: magentoPassword,
@@ -368,7 +374,8 @@ export class MagentoStack extends Stack {
         kmsKey: kmsKey,
         execBucket: execBucket,
         execLogGroup: execLogGroup,
-        debug: true,
+        magentoAdminTask: true,
+        magentoAdminTaskDebug: magentoAdminTaskDebug,
         mainStackALB: magento.getALB(),
       });
     }

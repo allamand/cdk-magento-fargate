@@ -6,7 +6,7 @@ test('For Mandatory Infra Constructs have been created', () => {
   const app = new App({
     context: {
       route53_domain_zone: 'magento.mydomain.com',
-      magento_debug_task: 'yes',
+      magento_admin_task: 'yes',
       useEFS: true,
     },
   });
@@ -35,16 +35,21 @@ test('For Mandatory Infra Constructs have been created', () => {
   expect(stack).toHaveResource('AWS::EFS::MountTarget');
   expect(stack).toHaveResource('AWS::EFS::AccessPoint');
 
+  expect(stack).toHaveResource('AWS::ECS::Service', {
+    ServiceName: 'MagentoServiceAdmin',
+  });
+  // 'MagentoServiceAdminServiceMagentoServiceAdminService2DF18265');
+
   // Expect for Resource with this Specs
 
   expect(app.synth().getStackArtifact(stack.artifactId).template).toMatchSnapshot();
 });
 
-test('For Mandatory Infra Constructs have been created Without EFS', () => {
+test('No Admin', () => {
   const app = new App({
     context: {
       route53_domain_zone: 'magento.mydomain.com',
-      magento_debug_task: 'yes',
+      magento_admin_task: 'no',
       //useEFS: false, // We don't use EFS for this test
     },
   });
@@ -62,18 +67,9 @@ test('For Mandatory Infra Constructs have been created Without EFS', () => {
     createCluster: true,
     env: devEnv,
   });
-  // Check for Mandatory Resources
-  expect(stack).toHaveResource('AWS::RDS::DBInstance');
-  expect(stack).toHaveResource('AWS::RDS::DBCluster');
-  expect(stack).toHaveResource('AWS::OpenSearchService::Domain');
-  expect(stack).toHaveResource('AWS::ECS::Service');
-  expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::LoadBalancer');
 
-  expect(stack).not.toHaveResource('AWS::EFS::FileSystem');
-  expect(stack).not.toHaveResource('AWS::EFS::MountTarget');
-  expect(stack).not.toHaveResource('AWS::EFS::AccessPoint');
+  expect(stack).not.toHaveResource('AWS::ECS::Service', {
+    ServiceName: 'MagentoServiceAdmin',
+  });
 
-  // Expect for Resource with this Specs
-
-  expect(app.synth().getStackArtifact(stack.artifactId).template).toMatchSnapshot();
 });

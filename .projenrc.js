@@ -42,18 +42,12 @@ const project = new AwsCdkTypeScriptApp({
   context: {
     //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     enablePrivateLink: 'false', // this parameter seems to works only one
-    useEFS: false,
-
-    //os_domain: 'magento-cdk4', // default to $CDK_STACK_NAME
-    os_master_user_name: 'magento-master-os',
-
-    //db_name: 'magento3', // default to env $CDK_STACK_NAME
-    db_user: 'magentodbuser',
+    useEFS: 'yes',
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
-    //route53_magento_prefix: 'magento', // default to $CDK_STACK_NAME
-    magento_user: 'user1',
-    magento_debug_task: 'yes',
+
+    magento_admin_task: 'yes',
+    magento_admin_task_debug: 'yes',
   },
 
   gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD'],
