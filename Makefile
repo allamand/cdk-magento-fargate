@@ -30,5 +30,5 @@ projen:
 
 #run npx projen build in this not-connected container to simulate gh action build
 local-test:
-	 docker run -ti -v $PWD:/src -w /src --net none allamand/eksutils zsh    
+	 docker run -ti -v $(PWD):/src -w /src allamand/eksutils zsh    
 	
