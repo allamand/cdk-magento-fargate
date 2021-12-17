@@ -23,12 +23,12 @@ describe:
 
 connect:
 	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query 'Stacks[*].Outputs[?OutputKey==`EcsExecCommandMagentoService`].OutputValue' --output text)
-	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query 'Stacks[*].Outputs[?OutputKey==`EcsExecCommandMagentoServiceDebug`].OutputValue' --output text)
+	@echo $(shell aws cloudformation describe-stacks --stack-name $(CDK_STACK_NAME) --query 'Stacks[*].Outputs[?OutputKey==`EcsExecCommandMagentoServiceAdmin`].OutputValue' --output text)
 
 projen:
 	npx projen
 
 #run npx projen build in this not-connected container to simulate gh action build
 local-test:
-	 docker run -ti -v $PWD:/src -w /src --net none allamand/eksutils zsh    
+	 docker run -ti -v $(PWD):/src -w /src allamand/eksutils zsh    
 	

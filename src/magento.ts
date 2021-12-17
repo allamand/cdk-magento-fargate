@@ -126,10 +126,16 @@ export interface MagentoServiceProps {
   readonly execLogGroup: LogGroup;
 
   /*
-   ** Debug specify if we cxreate a service with empty command to not start magento process and allow ecs connect in it
-   ** @default false (TODO: how to set default to false ??)
+   ** admin specify if we start admin magento service used to bootstrap magento with with `MAGENTO_DEPLOY_STATIC_CONTENT=yes`, `MAGENTO_SKIP_REINDEX=no`, `MAGENTO_SKIP_BOOTSTRAP=no`
+   ** @default true
    */
-  readonly debug?: Boolean;
+  readonly magentoAdminTask?: Boolean;
+
+  /*
+   ** adminDebug specify if we cxreate a service with empty command to not start magento process and allow ecs connect in it
+   ** @default false
+   */
+  readonly magentoAdminTaskDebug?: Boolean;
 
   /*
    ** mainStackALB is the ALB define in the main stack for magento (not the admin one)
@@ -168,7 +174,7 @@ export class MagentoService extends Construct {
      * create ALB
      */
     const albName = 'ecs-' + props.cluster.clusterName + id;
-    if (!props.debug) {
+    if (!props.magentoAdminTask) {
       this.alb = new ApplicationLoadBalancer(this, id + 'ALB', {
         vpc: props.vpc,
         internetFacing: true,
@@ -183,8 +189,6 @@ export class MagentoService extends Construct {
     var listener = undefined;
     // If we define a route53 hosted zone, we setup also SSL and certificate
     if (r53DomainZone != undefined) {
-
-
       const r53MagentoPrefix = this.node.tryGetContext('route53_magento_prefix')
         ? this.node.tryGetContext('route53_magento_prefix')
         : stack.stackName;
@@ -195,7 +199,7 @@ export class MagentoService extends Construct {
       domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
       this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
-      if (!props.debug) {
+      if (!props.magentoAdminTask) {
         listener = this!.alb.addListener(id + 'Listener', { port: 443 });
 
         listener.addCertificates(id + 'cert', [certificate]);
@@ -208,7 +212,7 @@ export class MagentoService extends Construct {
       }
     } else {
       //if no route53 we will run in http mode on default LB domain name
-      if (!props.debug) {
+      if (!props.magentoAdminTask) {
         listener = this!.alb.addListener(id + 'Listener', { port: 80 });
         this.hostName = this!.alb.loadBalancerDnsName;
         new CfnOutput(this, id + 'URL', { value: 'http://' + this.hostName });
@@ -242,15 +246,16 @@ export class MagentoService extends Construct {
       BITNAMI_DEBUG: 'true',
       MAGENTO_USERNAME: magentoUser,
 
-      //Only configure on Admin(debug) task
-      MAGENTO_DEPLOY_STATIC_CONTENT: props.debug ? 'yes' : 'no',
-      MAGENTO_SKIP_REINDEX: props.debug ? 'no' : 'yes',
-      MAGENTO_SKIP_BOOTSTRAP: props.debug ? 'no' : 'yes',
+      //Only configure on Admin task
+      MAGENTO_DEPLOY_STATIC_CONTENT: props.magentoAdminTask ? 'yes' : 'no',
+      MAGENTO_SKIP_REINDEX: props.magentoAdminTask ? 'no' : 'yes',
+      MAGENTO_SKIP_BOOTSTRAP: props.magentoAdminTask ? 'no' : 'yes',
 
       MAGENTO_HOST: this!.hostName,
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production',
+      MAGENTO_USE_EFS: props.useEFS ? 'yes': 'no',
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
@@ -283,10 +288,8 @@ export class MagentoService extends Construct {
 
     var containerDef: ContainerDefinitionOptions = {
       containerName: 'magento',
-      //image: ContainerImage.fromRegistry(props.magentoImage),
       image: props.magentoImage,
-      //replace command to /dev/null in case of startup problem you want to debug:
-      //command: props.debug == true ? ['tail', '-f', '/dev/null'] : undefined,
+      command: (props.magentoAdminTask == true && props.magentoAdminTaskDebug)? ['tail', '-f', '/dev/null'] : undefined,
       logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
       environment: magentoEnvs,
       secrets: magentoSecrets,
@@ -348,23 +351,23 @@ export class MagentoService extends Construct {
      */
     var cluster = props.cluster;
 
-    //No Load Balancer for Debug Service
+    //No Load Balancer for Admin Service
     this.service = new FargateService(this, 'Service' + id, {
       cluster,
       serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
       taskDefinition: taskDefinition,
-      //desiredCount: props.debug ? 1 : 0, //TODO: fix this
+      //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
       platformVersion: FargatePlatformVersion.VERSION1_4,
       securityGroups: [props.serviceSG],
       enableExecuteCommand: true,
-      healthCheckGracePeriod: !props.debug ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
+      healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
     });
 
     new CfnOutput(stack, 'EcsExecCommand' + id, {
       value: `ecs_exec_service ${cluster.clusterName} ${this.service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
     });
 
-    if (!props.debug) {
+    if (!props.magentoAdminTask) {
       const target = listener!.addTargets(id + 'Targets', {
         port: 8080,
         targets: [
@@ -391,6 +394,8 @@ export class MagentoService extends Construct {
 
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
         targetUtilizationPercent: 50,
+        scaleOutCooldown: Duration.seconds(60),
+        scaleInCooldown: Duration.seconds(120),
       });
 
       // scalableTarget.scaleOnRequestCount('RequestScaling', {
