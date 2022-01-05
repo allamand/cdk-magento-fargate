@@ -235,44 +235,52 @@ export class MagentoStack extends Stack {
       ? this.node.tryGetContext('os_master_user_name')
       : 'magento-os-master';
 
-    const osDomain = new opensearch.Domain(this, 'Domain', {
-      version: opensearch.EngineVersion.OPENSEARCH_1_0,
-      domainName: OS_DOMAIN,
-      //accessPolicies: [osPolicy], // Default No access policies for magento
-      removalPolicy: RemovalPolicy.DESTROY,
-      securityGroups: [openSearchSG],
-      //If you want more capacity for Opensearch . default 1 instance r5.large.search datanode; no dedicated master nodes
-      // capacity: {
-      //   masterNodes: 5,
-      //   dataNodes: 20,
-      // },
-      ebs: {
-        volumeSize: 20,
-      },
-      //if you need, else only 1 az
-      // zoneAwareness: {
-      //   availabilityZoneCount: 3,
-      // },
-      logging: {
-        slowSearchLogEnabled: true,
-        appLogEnabled: true,
-        slowIndexLogEnabled: true,
-      },
+    const OS_DOMAIN_ENDPOINT = this.node.tryGetContext('os_domain_endpoint')
+      ? this.node.tryGetContext('os_domain_endpoint')
+      : undefined;
 
-      //encryption
-      enforceHttps: true,
-      nodeToNodeEncryption: true,
-      encryptionAtRest: {
-        enabled: true,
-      },
-      fineGrainedAccessControl: {
-        masterUserName: OS_MASTER_USER_NAME,
-        masterUserPassword: magentoOpensearchAdminPassword.secretValue,
-      },
-      useUnsignedBasicAuth: true,
-      enableVersionUpgrade: true,
-    });
+    var osDomain;
+    if (OS_DOMAIN_ENDPOINT) { // If we uses an existing OpenSearch Domain
+      osDomain = opensearch.Domain.fromDomainEndpoint(this, 'domainImport', OS_DOMAIN_ENDPOINT);
+    } else {
+      osDomain = new opensearch.Domain(this, 'Domain', {
+        version: opensearch.EngineVersion.OPENSEARCH_1_0,
+        domainName: OS_DOMAIN,
+        //accessPolicies: [osPolicy], // Default No access policies for magento
+        removalPolicy: RemovalPolicy.DESTROY,
+        securityGroups: [openSearchSG],
+        //If you want more capacity for Opensearch . default 1 instance r5.large.search datanode; no dedicated master nodes
+        // capacity: {
+        //   masterNodes: 5,
+        //   dataNodes: 20,
+        // },
+        ebs: {
+          volumeSize: 20,
+        },
+        //if you need, else only 1 az
+        // zoneAwareness: {
+        //   availabilityZoneCount: 3,
+        // },
+        logging: {
+          slowSearchLogEnabled: true,
+          appLogEnabled: true,
+          slowIndexLogEnabled: true,
+        },
 
+        //encryption
+        enforceHttps: true,
+        nodeToNodeEncryption: true,
+        encryptionAtRest: {
+          enabled: true,
+        },
+        fineGrainedAccessControl: {
+          masterUserName: OS_MASTER_USER_NAME,
+          masterUserPassword: magentoOpensearchAdminPassword.secretValue,
+        },
+        useUnsignedBasicAuth: true,
+        enableVersionUpgrade: true,
+      });
+    }
     new CfnOutput(this, 'EsDomainEndpoint', { value: osDomain.domainEndpoint });
     new CfnOutput(this, 'EsDomainName', { value: osDomain.domainName });
     new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
@@ -280,7 +288,7 @@ export class MagentoStack extends Stack {
 
     var useEFS: boolean = false; // By default I don't want EFS, it's too slow
     const contextUseEFS = this.node.tryGetContext('useEFS');
-    if (contextUseEFS == 'yes') {
+    if (contextUseEFS == 'yes' || contextUseEFS == 'true') {
       useEFS = true;
     }
     var efsFileSystem: FileSystem;
@@ -353,7 +361,9 @@ export class MagentoStack extends Stack {
 
     // Add Magento Admin Task
     const magentoAdminTask = this.node.tryGetContext('magento_admin_task');
-    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug') ? this.node.tryGetContext('magento_admin_task_debug') : 'no';
+    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug')
+      ? this.node.tryGetContext('magento_admin_task_debug')
+      : 'no';
     if (magentoAdminTask == 'yes') {
       new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,
