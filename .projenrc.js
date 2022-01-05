@@ -44,7 +44,7 @@ const project = new AwsCdkTypeScriptApp({
     enablePrivateLink: 'false', // this parameter seems to works only one
     useEFS: 'yes',
 
-    //route53_domain_zone: 'ecs.demo3.allamand.com',
+    route53_domain_zone: 'ecs.demo3.allamand.com',
 
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'yes',

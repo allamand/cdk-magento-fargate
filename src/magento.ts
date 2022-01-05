@@ -18,7 +18,7 @@ import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
-import { Domain } from '@aws-cdk/aws-opensearchservice';
+import { IDomain } from '@aws-cdk/aws-opensearchservice';
 import { IDatabaseCluster } from '@aws-cdk/aws-rds';
 import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
 import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
@@ -89,7 +89,7 @@ export interface MagentoServiceProps {
   /**
    * OpenSearch Domain
    */
-  readonly osDomain: Domain;
+  readonly osDomain: IDomain;
 
   /**
    * OpenSearch User
@@ -203,6 +203,7 @@ export class MagentoService extends Construct {
         listener = this!.alb.addListener(id + 'Listener', { port: 443 });
 
         listener.addCertificates(id + 'cert', [certificate]);
+
         new ARecord(this, id + 'AliasRecord', {
           zone: domainZone,
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
@@ -247,6 +248,7 @@ export class MagentoService extends Construct {
       MAGENTO_USERNAME: magentoUser,
 
       //Only configure on Admin task
+      MAGENTO_ADMIN_TASK: props.magentoAdminTask ? 'yes' : 'no',
       MAGENTO_DEPLOY_STATIC_CONTENT: props.magentoAdminTask ? 'yes' : 'no',
       MAGENTO_SKIP_REINDEX: props.magentoAdminTask ? 'no' : 'yes',
       MAGENTO_SKIP_BOOTSTRAP: props.magentoAdminTask ? 'no' : 'yes',
@@ -255,7 +257,7 @@ export class MagentoService extends Construct {
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production',
-      MAGENTO_USE_EFS: props.useEFS ? 'yes': 'no',
+      MAGENTO_USE_EFS: props.useEFS ? 'yes' : 'no',
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
@@ -289,8 +291,11 @@ export class MagentoService extends Construct {
     var containerDef: ContainerDefinitionOptions = {
       containerName: 'magento',
       image: props.magentoImage,
-      command: (props.magentoAdminTask == true && props.magentoAdminTaskDebug)? ['tail', '-f', '/dev/null'] : undefined,
-      logging: new AwsLogDriver({ streamPrefix: 'magento', mode: AwsLogDriverMode.NON_BLOCKING }),
+      command: props.magentoAdminTask == true && props.magentoAdminTaskDebug ? ['tail', '-f', '/dev/null'] : undefined,
+      logging: new AwsLogDriver({
+        streamPrefix: 'service',
+        mode: AwsLogDriverMode.NON_BLOCKING,
+      }),
       environment: magentoEnvs,
       secrets: magentoSecrets,
       user: 'daemon',
@@ -396,6 +401,7 @@ export class MagentoService extends Construct {
         targetUtilizationPercent: 50,
         scaleOutCooldown: Duration.seconds(60),
         scaleInCooldown: Duration.seconds(120),
+        disableScaleIn: true,
       });
 
       // scalableTarget.scaleOnRequestCount('RequestScaling', {

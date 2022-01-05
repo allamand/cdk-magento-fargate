@@ -1,4 +1,4 @@
-FROM public.ecr.aws/seb-demo/magento:latest
+FROM public.ecr.aws/seb-demo/magento:0.1
 LABEL maintainer "Bitnami <containers@bitnami.com>"
 
 ## Install 'vim'
