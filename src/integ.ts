@@ -13,7 +13,7 @@ const app = new App();
 new MagentoStack(app, stackName, {
   clusterName: clusterName,
   createCluster: true,
-  description: 'MY Description',
+  description: 'This stack creates the stack required to host a Magento ecommerce application',
   env: devEnv,
 });
 

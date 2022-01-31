@@ -1,10 +1,21 @@
-import { InterfaceVpcEndpointAwsService, Peer, Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
+import {
+  InterfaceVpcEndpointAwsService,
+  Peer,
+  Port,
+  SecurityGroup,
+  Vpc,
+  SubnetType,
+  InstanceType,
+  InstanceClass,
+  InstanceSize,
+} from '@aws-cdk/aws-ec2';
 import { AssetImage, Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
+import { CfnSubnetGroup, CfnCacheCluster } from '@aws-cdk/aws-elasticache';
 import { Key } from '@aws-cdk/aws-kms';
 import { LogGroup } from '@aws-cdk/aws-logs';
 import * as opensearch from '@aws-cdk/aws-opensearchservice';
-import { Credentials, DatabaseCluster, DatabaseClusterEngine } from '@aws-cdk/aws-rds';
+import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineVersion } from '@aws-cdk/aws-rds';
 import { Bucket } from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps, Tags } from '@aws-cdk/core';
@@ -178,7 +189,7 @@ export class MagentoStack extends Stack {
     ec2SG.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'allow 22 inbound from ec2');
 
     // RDS security group which allow port 3306
-    const rdsSG = new SecurityGroup(this, 'wordpressRdsSecurityGroup', {
+    const rdsSG = new SecurityGroup(this, 'magentoRDSSecurityGroup', {
       vpc: vpc,
       description: 'allow 3306 inbound',
       allowAllOutbound: true,
@@ -192,7 +203,7 @@ export class MagentoStack extends Stack {
       allowAllOutbound: true,
     });
 
-    // Fargatge Service Security Froup
+    // Fargatge Service Security Group
     const serviceSG = new SecurityGroup(this, 'serviceSecurityGroup', {
       vpc: vpc,
       description: 'ecs service securitygroup',
@@ -209,16 +220,44 @@ export class MagentoStack extends Stack {
 
     //const secret = SecretValue.plainText(magentoDatabasePassword.toString());
     const secret = magentoDatabasePassword.secretValue;
-    const db = new DatabaseCluster(this, 'ServerlessWordpressAuroraCluster', {
-      engine: DatabaseClusterEngine.AURORA_MYSQL,
+    const db = new DatabaseCluster(this, 'MagentoAuroraCluster', {
+      engine: DatabaseClusterEngine.auroraMysql({ version: AuroraMysqlEngineVersion.VER_2_10_1 }),
       credentials: Credentials.fromPassword(DB_USER, secret),
       removalPolicy: RemovalPolicy.DESTROY,
+      instances: 1,
       instanceProps: {
         vpc: vpc,
+        instanceType: InstanceType.of(InstanceClass.MEMORY6_GRAVITON, InstanceSize.LARGE),
         securityGroups: [rdsSG],
       },
       defaultDatabaseName: DB_NAME,
     });
+
+    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
+
+    const elastiCacheSecurityGroup = new SecurityGroup(this, 'ElasticacheSecurityGroup', {
+      vpc: vpc,
+      description: 'Allow Redis port from ECS',
+      allowAllOutbound: true,
+    });
+
+    elastiCacheSecurityGroup.addIngressRule(serviceSG, Port.tcp(6379));
+
+    const subnetGroup = new CfnSubnetGroup(this, 'RedisClusterPrivateSubnetGroup', {
+      cacheSubnetGroupName: `${stackName}-redis-cache`,
+      subnetIds: privateSubnetIds,
+      description: 'Private Subnet Group for Magento Elasticache',
+    });
+
+    const redis = new CfnCacheCluster(this, 'RedisCluster', {
+      engine: 'redis',
+      cacheNodeType: 'cache.r6g.large',
+      numCacheNodes: 1,
+      clusterName: 'magento-elasticache',
+      vpcSecurityGroupIds: [elastiCacheSecurityGroup.securityGroupId],
+      cacheSubnetGroupName: subnetGroup.cacheSubnetGroupName,
+    });
+    redis.addDependsOn(subnetGroup);
 
     /*
      ** Create OpenSearch cluster with fine-grained access control only
@@ -235,57 +274,71 @@ export class MagentoStack extends Stack {
       ? this.node.tryGetContext('os_master_user_name')
       : 'magento-os-master';
 
-    const osDomain = new opensearch.Domain(this, 'Domain', {
-      version: opensearch.EngineVersion.OPENSEARCH_1_0,
-      domainName: OS_DOMAIN,
-      //accessPolicies: [osPolicy], // Default No access policies for magento
-      removalPolicy: RemovalPolicy.DESTROY,
-      securityGroups: [openSearchSG],
-      //If you want more capacity for Opensearch . default 1 instance r5.large.search datanode; no dedicated master nodes
-      // capacity: {
-      //   masterNodes: 5,
-      //   dataNodes: 20,
-      // },
-      ebs: {
-        volumeSize: 20,
-      },
-      //if you need, else only 1 az
-      // zoneAwareness: {
-      //   availabilityZoneCount: 3,
-      // },
-      logging: {
-        slowSearchLogEnabled: true,
-        appLogEnabled: true,
-        slowIndexLogEnabled: true,
-      },
+    const OS_DOMAIN_ENDPOINT = this.node.tryGetContext('os_domain_endpoint')
+      ? this.node.tryGetContext('os_domain_endpoint')
+      : undefined;
 
-      //encryption
-      enforceHttps: true,
-      nodeToNodeEncryption: true,
-      encryptionAtRest: {
-        enabled: true,
-      },
-      fineGrainedAccessControl: {
-        masterUserName: OS_MASTER_USER_NAME,
-        masterUserPassword: magentoOpensearchAdminPassword.secretValue,
-      },
-      useUnsignedBasicAuth: true,
-      enableVersionUpgrade: true,
-    });
+    var osDomain;
+    if (OS_DOMAIN_ENDPOINT) {
+      // If we uses an existing OpenSearch Domain
+      osDomain = opensearch.Domain.fromDomainEndpoint(this, 'domainImport', OS_DOMAIN_ENDPOINT);
+    } else {
+      osDomain = new opensearch.Domain(this, 'Domain', {
+        version: opensearch.EngineVersion.OPENSEARCH_1_0,
+        domainName: OS_DOMAIN,
+        //accessPolicies: [osPolicy], // Default No access policies for magento
+        removalPolicy: RemovalPolicy.DESTROY,
+        securityGroups: [openSearchSG],
+        //If you want more capacity for Opensearch . default 1 instance r5.large.search datanode; no dedicated master nodes
+        // capacity: {
+        //   masterNodes: 5,
+        //   dataNodes: 20,
+        // },
+        ebs: {
+          volumeSize: 20,
+        },
+        //if you need, else only 1 az
+        // zoneAwareness: {
+        //   availabilityZoneCount: 3,
+        // },
+        logging: {
+          slowSearchLogEnabled: true,
+          appLogEnabled: true,
+          slowIndexLogEnabled: true,
+        },
 
+        //encryption
+        enforceHttps: true,
+        nodeToNodeEncryption: true,
+        encryptionAtRest: {
+          enabled: true,
+        },
+        fineGrainedAccessControl: {
+          masterUserName: OS_MASTER_USER_NAME,
+          masterUserPassword: magentoOpensearchAdminPassword.secretValue,
+        },
+        useUnsignedBasicAuth: true,
+        enableVersionUpgrade: true,
+      });
+    }
     new CfnOutput(this, 'EsDomainEndpoint', { value: osDomain.domainEndpoint });
     new CfnOutput(this, 'EsDomainName', { value: osDomain.domainName });
     new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
     process.env.elasticsearch_host = osDomain.domainEndpoint;
 
+    var createEFS: boolean = false; // By default I don't want EFS, it's too slow
+    const contextCreateEFS = this.node.tryGetContext('createEFS');
+    if (contextCreateEFS == 'yes' || contextCreateEFS == 'true') {
+      createEFS = true;
+    }
     var useEFS: boolean = false; // By default I don't want EFS, it's too slow
     const contextUseEFS = this.node.tryGetContext('useEFS');
-    if (contextUseEFS == 'yes') {
+    if (contextUseEFS == 'yes' || contextUseEFS == 'true') {
       useEFS = true;
     }
     var efsFileSystem: FileSystem;
     var fileSystemAccessPoint: AccessPoint;
-    if (useEFS) {
+    if (createEFS) {
       /*
        ** Create EFS File system
        */
@@ -345,6 +398,7 @@ export class MagentoStack extends Stack {
       execBucket: execBucket,
       execLogGroup: execLogGroup,
       serviceSG: serviceSG,
+      cacheEndpoint: redis.attrRedisEndpointAddress,
     });
 
     //allow to communicate with OpenSearch
@@ -353,7 +407,9 @@ export class MagentoStack extends Stack {
 
     // Add Magento Admin Task
     const magentoAdminTask = this.node.tryGetContext('magento_admin_task');
-    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug') ? this.node.tryGetContext('magento_admin_task_debug') : 'no';
+    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug')
+      ? this.node.tryGetContext('magento_admin_task_debug')
+      : 'no';
     if (magentoAdminTask == 'yes') {
       new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,
@@ -377,6 +433,7 @@ export class MagentoStack extends Stack {
         magentoAdminTask: true,
         magentoAdminTaskDebug: magentoAdminTaskDebug,
         mainStackALB: magento.getALB(),
+        cacheEndpoint: redis.attrRedisEndpointAddress,
       });
     }
   }

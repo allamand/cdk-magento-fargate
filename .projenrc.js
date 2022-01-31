@@ -1,8 +1,18 @@
 const { AwsCdkTypeScriptApp } = require('projen');
 const project = new AwsCdkTypeScriptApp({
-  cdkVersion: '1.132.0',
+  authorName: 'Amazon Web Services',
+  authorUrl: 'https://aws.amazon.com',
+  authorOrganization: true,
+  homepage: 'https://github.com/aws-samples/cdk-magento-fargate.git',
+  copyrightPeriod: `2021-${new Date().getFullYear()}`,
+  copyrightOwner: 'Amazon.com, Inc. or its affiliates. All Rights Reserved.',
+  keywords: ['aws', 'constructs', 'cdk', 'ecs', 'magento'],
+
+  cdkVersion: '1.137.0',
   defaultReleaseBranch: 'main',
+  license: 'MIT-0',
   name: 'cdk-magento-fargate',
+  repositoryUrl: 'https://github.com/aws-samples/cdk-magento-fargate.git',
   appEntrypoint: 'integ.ts',
 
   cdkDependencies: [
@@ -27,6 +37,7 @@ const project = new AwsCdkTypeScriptApp({
     '@aws-cdk/aws-servicediscovery',
     '@aws-cdk/aws-route53-targets',
     '@aws-cdk/aws-secretsmanager',
+    '@aws-cdk/aws-elasticache',
     '@aws-cdk/cx-api',
   ],
 
@@ -42,9 +53,12 @@ const project = new AwsCdkTypeScriptApp({
   context: {
     //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     enablePrivateLink: 'false', // this parameter seems to works only one
-    useEFS: 'yes',
+    createEFS: 'yes', //CDK will create the EFS File System
+    useEFS: 'no', //CDK will use the created file system in the ECS Task
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
+
+    //os_domain_endpoint: 'search-magento-zwa5v3x4br3kgn4y5e5nu6hv7q.eu-west-1.es.amazonaws.com',
 
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'yes',

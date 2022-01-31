@@ -1,11 +1,13 @@
 FROM bitnami/magento
 LABEL maintainer "Bitnami <containers@bitnami.com>"
 
-## Install 'vim'
-#RUN install_packages vim.p
-
-
 USER root
+
+## Install 'vim'
+RUN install_packages vim
+
+
+
 RUN chown -R daemon:daemon /opt/bitnami/
 RUN chown -R daemon:daemon /bitnami/magento
 
