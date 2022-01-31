@@ -21,7 +21,6 @@ import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps, Tags } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import { MagentoService } from './magento';
-import * as yaml from 'js-yaml';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
 export interface MagentoStackProps extends StackProps {
@@ -38,30 +37,6 @@ export class MagentoStack extends Stack {
     const stack = Stack.of(this);
     //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-patterns-readme.html#use-the-remove_default_desired_count-feature-flag
     stack.node.setContext(cxapi.ECS_REMOVE_DEFAULT_DESIRED_COUNT, true);
-
-    const host='https://raw.githubusercontent.com';
-    const uri = '/aws-observability/aws-otel-collector/main/deployment-template/eks/otel-container-insights-infra.yaml';
-     const request = require('sync-request');
-     const body = yaml.loadAll(request('GET', `${host}${uri}`).getBody())
-       .filter((rbac: any) => {
-         return rbac.kind != 'ServiceAccount' && rbac.kind != 'Namespace';
-       });
-    console.log(body);
-
-    /*     const adotManifests = yaml
-      .loadAll(
-        request(
-          'GET',
-          'https://raw.githubusercontent.com/aws-observability/aws-otel-collector/main/deployment-template/eks/otel-container-insights-infra.yaml',
-        ).done(function (res: any) {
-          console.log(res);
-          return res.getBody();
-        }),
-      )
-      .filter((rbac: any) => {
-        return rbac.kind != 'ServiceAccount' && rbac.kind != 'Namespace';
-      });
-    console.log(adotManifests); */
 
     //Create or Reuse VPC
     let stackName = this.stackName;
