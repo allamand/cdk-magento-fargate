@@ -1,5 +1,5 @@
-import '@aws-cdk/assert/jest';
-import { App } from '@aws-cdk/core';
+import 'aws-cdk-lib/assert/jest';
+import { App } from 'aws-cdk-lib';
 import { MagentoStack } from '../src/main';
 
 test('For Mandatory Infra Constructs have been created Without EFS', () => {
