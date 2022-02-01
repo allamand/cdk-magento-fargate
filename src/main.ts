@@ -1,3 +1,4 @@
+import { CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
 import {
   InterfaceVpcEndpointAwsService,
   Peer,
@@ -18,10 +19,9 @@ import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineVersion } from 'aws-cdk-lib/aws-rds';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import { CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
 import * as cxapi from 'aws-cdk-lib/cx-api';
-import { MagentoService } from './magento';
 import { Construct } from 'constructs';
+import { MagentoService } from './magento';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
 export interface MagentoStackProps extends StackProps {
