@@ -1,3 +1,4 @@
+import { CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
 import {
   InterfaceVpcEndpointAwsService,
   Peer,
@@ -8,18 +9,18 @@ import {
   InstanceType,
   InstanceClass,
   InstanceSize,
-} from '@aws-cdk/aws-ec2';
-import { AssetImage, Cluster, ContainerImage, ExecuteCommandLogging } from '@aws-cdk/aws-ecs';
-import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from '@aws-cdk/aws-efs';
-import { CfnSubnetGroup, CfnCacheCluster } from '@aws-cdk/aws-elasticache';
-import { Key } from '@aws-cdk/aws-kms';
-import { LogGroup } from '@aws-cdk/aws-logs';
-import * as opensearch from '@aws-cdk/aws-opensearchservice';
-import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineVersion } from '@aws-cdk/aws-rds';
-import { Bucket } from '@aws-cdk/aws-s3';
-import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { CfnOutput, Construct, RemovalPolicy, Size, Stack, StackProps, Tags } from '@aws-cdk/core';
-import * as cxapi from '@aws-cdk/cx-api';
+} from 'aws-cdk-lib/aws-ec2';
+import { AssetImage, Cluster, ContainerImage, ExecuteCommandLogging } from 'aws-cdk-lib/aws-ecs';
+import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
+import { CfnSubnetGroup, CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
+import { Key } from 'aws-cdk-lib/aws-kms';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
+import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
+import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineVersion } from 'aws-cdk-lib/aws-rds';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as cxapi from 'aws-cdk-lib/cx-api';
+import { Construct } from 'constructs';
 import { MagentoService } from './magento';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
@@ -216,7 +217,6 @@ export class MagentoStack extends Stack {
      */
     const DB_NAME = this.node.tryGetContext('db_name') ? this.node.tryGetContext('db_name') : stackName;
     const DB_USER = this.node.tryGetContext('db_user') ? this.node.tryGetContext('db_user') : 'magentouser';
-    //const DB_PASSWORD = this.node.tryGetContext('db_password') ? this.node.tryGetContext('db_password') : 'Passw00rd!';
 
     //const secret = SecretValue.plainText(magentoDatabasePassword.toString());
     const secret = magentoDatabasePassword.secretValue;
@@ -253,7 +253,7 @@ export class MagentoStack extends Stack {
       engine: 'redis',
       cacheNodeType: 'cache.r6g.large',
       numCacheNodes: 1,
-      clusterName: 'magento-elasticache',
+      clusterName: `${stackName}magento-elasticache`,
       vpcSecurityGroupIds: [elastiCacheSecurityGroup.securityGroupId],
       cacheSubnetGroupName: subnetGroup.cacheSubnetGroupName,
     });

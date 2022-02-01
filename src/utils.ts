@@ -1,5 +1,5 @@
-import { Construct, Stack } from '@aws-cdk/core';
-
+import { Stack } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 
 function isContextAvailable(scope: Construct, key: string) {
   return Stack.of(scope).node.tryGetContext(key);

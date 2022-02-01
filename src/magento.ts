@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/member-ordering */
 
-import { Certificate } from '@aws-cdk/aws-certificatemanager';
-import { ISecurityGroup, IVpc } from '@aws-cdk/aws-ec2';
-import * as ecs from '@aws-cdk/aws-ecs';
+import { CfnOutput, Duration, Stack, Tags } from 'aws-cdk-lib';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
 import {
   AssetImage,
   AwsLogDriver,
@@ -12,20 +13,20 @@ import {
   FargateService,
   FargateTaskDefinition,
   ICluster,
-} from '@aws-cdk/aws-ecs';
-import { AccessPoint, FileSystem } from '@aws-cdk/aws-efs';
-import { ApplicationLoadBalancer } from '@aws-cdk/aws-elasticloadbalancingv2';
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
-import { Key } from '@aws-cdk/aws-kms';
-import { LogGroup } from '@aws-cdk/aws-logs';
-import { IDomain } from '@aws-cdk/aws-opensearchservice';
-import { IDatabaseCluster } from '@aws-cdk/aws-rds';
-import { ARecord, HostedZone, RecordTarget } from '@aws-cdk/aws-route53';
-import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
-import { Bucket } from '@aws-cdk/aws-s3';
-import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { StringParameter } from '@aws-cdk/aws-ssm';
-import { CfnOutput, Construct, Duration, Stack, Tags } from '@aws-cdk/core';
+} from 'aws-cdk-lib/aws-ecs';
+import { AccessPoint, FileSystem } from 'aws-cdk-lib/aws-efs';
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Key } from 'aws-cdk-lib/aws-kms';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
+import { IDomain } from 'aws-cdk-lib/aws-opensearchservice';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Construct } from 'constructs';
 
 /**
  * construct properties for EksUtils
@@ -343,7 +344,7 @@ export class MagentoService extends Construct {
             stack.formatArn({
               service: 'elasticfilesystem',
               resource: 'file-system',
-              sep: '/',
+              //sep: '/',
               resourceName: props.efsFileSystem!.fileSystemId,
             }),
           ],

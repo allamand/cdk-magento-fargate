@@ -49,6 +49,8 @@ npx npm install projen
 
 ```bash
 $ git init
+$ npm init -y
+$ npm i projen -D   
 $ npx projen new awscdk-app-ts
 ```
 
@@ -65,21 +67,7 @@ You can create alias to launch projen:
 ```bash
 alias pj='npx projen'
 ```
-
-### Install project dependencies.
-
-The dependencies CDK or npm packages must be installed through Projen (in the `.projenrx.js` file)
-
-example:
-
-```json
-  cdkDependencies: [
-    '@aws-cdk/aws-certificatemanager',
-    '@aws-cdk/aws-ec2',
-    '@aws-cdk/aws-ecr',
-```
-
-then execute `pj` to install thems
+then execute `pj` to bootstrap or upgrade your project.
 
 ```bash
 pj

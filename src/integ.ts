@@ -1,4 +1,4 @@
-import { App } from '@aws-cdk/core';
+import { App } from 'aws-cdk-lib';
 import { MagentoStack } from './main';
 
 const stackName = process.env.CDK_STACK_NAME ? process.env.CDK_STACK_NAME : 'magento';
