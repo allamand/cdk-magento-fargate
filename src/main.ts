@@ -1,4 +1,5 @@
 import { CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
+import { AutoScalingGroup, GroupMetrics, Monitoring } from 'aws-cdk-lib/aws-autoscaling';
 import {
   InterfaceVpcEndpointAwsService,
   Peer,
@@ -10,7 +11,15 @@ import {
   InstanceClass,
   InstanceSize,
 } from 'aws-cdk-lib/aws-ec2';
-import { AssetImage, Cluster, ContainerImage, ExecuteCommandLogging } from 'aws-cdk-lib/aws-ecs';
+import {
+  AmiHardwareType,
+  AsgCapacityProvider,
+  AssetImage,
+  Cluster,
+  ContainerImage,
+  EcsOptimizedImage,
+  ExecuteCommandLogging,
+} from 'aws-cdk-lib/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
 import { CfnSubnetGroup, CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
 import { Key } from 'aws-cdk-lib/aws-kms';
@@ -126,6 +135,35 @@ export class MagentoStack extends Stack {
     });
     new CfnOutput(stack, 'MagentoDatabasePasswordOutput', { value: magentoDatabasePassword.toString() });
 
+    var ec2Cluster: boolean = false; // By default I uses Fargate Cluster
+    const contextEc2Cluster = this.node.tryGetContext('ec2Cluster');
+    if (contextEc2Cluster == 'yes' || contextEc2Cluster == 'true') {
+      ec2Cluster = true;
+    }
+    let asg1: AutoScalingGroup;
+    let cp1: AsgCapacityProvider;
+    if (ec2Cluster) {
+      asg1 = new AutoScalingGroup(this, 'Asg1', {
+        vpc: vpc,
+        machineImage: EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD),
+
+        instanceType: new InstanceType('c5.4xlarge'),
+
+        minCapacity: 1,
+        maxCapacity: 4,
+        instanceMonitoring: Monitoring.DETAILED,
+        groupMetrics: [GroupMetrics.all()],
+        // https://github.com/aws/aws-cdk/issues/11581
+      });
+
+      cp1 = new AsgCapacityProvider(this, 'CP1', {
+        autoScalingGroup: asg1,
+        enableManagedScaling: true,
+        enableManagedTerminationProtection: true,
+        targetCapacityPercent: 100, //don't over-provisionning
+      });
+    }
+
     // Create or Reuse ECS Cluster
     // Reference existing network and cluster infrastructure
     var cluster = undefined;
@@ -156,6 +194,11 @@ export class MagentoStack extends Stack {
           logging: ExecuteCommandLogging.OVERRIDE,
         },
       });
+      //Cast cluster to Cluster instead of ICluster
+      if (ec2Cluster) {
+        //const cluster = cluster as Cluster;
+        cluster.addAsgCapacityProvider(cp1!);
+      }
     }
     new CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
 
@@ -278,6 +321,7 @@ export class MagentoStack extends Stack {
       ? this.node.tryGetContext('os_domain_endpoint')
       : undefined;
 
+    //TODO: Create opensearch private
     var osDomain;
     if (OS_DOMAIN_ENDPOINT) {
       // If we uses an existing OpenSearch Domain
@@ -382,6 +426,7 @@ export class MagentoStack extends Stack {
     const magento = new MagentoService(this, 'MagentoService', {
       vpc: vpc,
       cluster: cluster!,
+      ec2Cluster: ec2Cluster,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
       useEFS: useEFS,
@@ -414,6 +459,7 @@ export class MagentoStack extends Stack {
       new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,
         cluster: cluster!,
+        ec2Cluster: ec2Cluster,
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
         useEFS: useEFS,

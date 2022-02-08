@@ -1144,6 +1144,7 @@ Object {
               "-f",
               "/dev/null",
             ],
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1280,6 +1281,7 @@ Object {
                 "mode": "non-blocking",
               },
             },
+            "Memory": 8096,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
@@ -1991,6 +1993,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -2127,6 +2130,7 @@ Object {
                 "mode": "non-blocking",
               },
             },
+            "Memory": 8096,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
