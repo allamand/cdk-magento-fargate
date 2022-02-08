@@ -186,10 +186,10 @@ Object {
       },
       "Type": "AWS::IAM::Role",
     },
-    "AsgASGD1D7B4E2": Object {
+    "Asg1ASG8A2F9427": Object {
       "Properties": Object {
         "LaunchConfigurationName": Object {
-          "Ref": "AsgLaunchConfig6D4F96BB",
+          "Ref": "Asg1LaunchConfig13CB129F",
         },
         "MaxSize": "4",
         "MetricsCollection": Array [
@@ -203,7 +203,7 @@ Object {
           Object {
             "Key": "Name",
             "PropagateAtLaunch": true,
-            "Value": "magento/Asg",
+            "Value": "magento/Asg1",
           },
         ],
         "VPCZoneIdentifier": Array [
@@ -218,17 +218,17 @@ Object {
         },
       },
     },
-    "AsgInstanceProfileBCEDB827": Object {
+    "Asg1InstanceProfileF0687320": Object {
       "Properties": Object {
         "Roles": Array [
           Object {
-            "Ref": "AsgInstanceRole7946982D",
+            "Ref": "Asg1InstanceRoleA17A0106",
           },
         ],
       },
       "Type": "AWS::IAM::InstanceProfile",
     },
-    "AsgInstanceRole7946982D": Object {
+    "Asg1InstanceRoleA17A0106": Object {
       "Properties": Object {
         "AssumeRolePolicyDocument": Object {
           "Statement": Array [
@@ -245,13 +245,13 @@ Object {
         "Tags": Array [
           Object {
             "Key": "Name",
-            "Value": "magento/Asg",
+            "Value": "magento/Asg1",
           },
         ],
       },
       "Type": "AWS::IAM::Role",
     },
-    "AsgInstanceRoleDefaultPolicy16A5BCED": Object {
+    "Asg1InstanceRoleDefaultPolicyF3C02A48": Object {
       "Properties": Object {
         "PolicyDocument": Object {
           "Statement": Array [
@@ -300,18 +300,18 @@ Object {
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "AsgInstanceRoleDefaultPolicy16A5BCED",
+        "PolicyName": "Asg1InstanceRoleDefaultPolicyF3C02A48",
         "Roles": Array [
           Object {
-            "Ref": "AsgInstanceRole7946982D",
+            "Ref": "Asg1InstanceRoleA17A0106",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
     },
-    "AsgInstanceSecurityGroupC53F1492": Object {
+    "Asg1InstanceSecurityGroupE2951C6F": Object {
       "Properties": Object {
-        "GroupDescription": "magento/Asg/InstanceSecurityGroup",
+        "GroupDescription": "magento/Asg1/InstanceSecurityGroup",
         "SecurityGroupEgress": Array [
           Object {
             "CidrIp": "0.0.0.0/0",
@@ -322,31 +322,31 @@ Object {
         "Tags": Array [
           Object {
             "Key": "Name",
-            "Value": "magento/Asg",
+            "Value": "magento/Asg1",
           },
         ],
         "VpcId": "vpc-12345",
       },
       "Type": "AWS::EC2::SecurityGroup",
     },
-    "AsgLaunchConfig6D4F96BB": Object {
+    "Asg1LaunchConfig13CB129F": Object {
       "DependsOn": Array [
-        "AsgInstanceRoleDefaultPolicy16A5BCED",
-        "AsgInstanceRole7946982D",
+        "Asg1InstanceRoleDefaultPolicyF3C02A48",
+        "Asg1InstanceRoleA17A0106",
       ],
       "Properties": Object {
         "IamInstanceProfile": Object {
-          "Ref": "AsgInstanceProfileBCEDB827",
+          "Ref": "Asg1InstanceProfileF0687320",
         },
         "ImageId": Object {
           "Ref": "SsmParameterValueawsserviceecsoptimizedamiamazonlinux2recommendedimageidC96584B6F00A464EAD1953AFF4B05118Parameter",
         },
         "InstanceMonitoring": true,
-        "InstanceType": "c5.xlarge",
+        "InstanceType": "c5.4xlarge",
         "SecurityGroups": Array [
           Object {
             "Fn::GetAtt": Array [
-              "AsgInstanceSecurityGroupC53F1492",
+              "Asg1InstanceSecurityGroupE2951C6F",
               "GroupId",
             ],
           },
@@ -376,7 +376,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Properties": Object {
         "AutoScalingGroupProvider": Object {
           "AutoScalingGroupArn": Object {
-            "Ref": "AsgASGD1D7B4E2",
+            "Ref": "Asg1ASG8A2F9427",
           },
           "ManagedScaling": Object {
             "Status": "ENABLED",
@@ -1352,7 +1352,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
               "-f",
               "/dev/null",
             ],
-            "Cpu": 4096,
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1489,7 +1489,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "mode": "non-blocking",
               },
             },
-            "Memory": 30720,
+            "Memory": 8096,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
@@ -2199,7 +2199,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 4096,
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -2336,7 +2336,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "mode": "non-blocking",
               },
             },
-            "Memory": 30720,
+            "Memory": 8096,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
