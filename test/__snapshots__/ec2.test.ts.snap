@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Magento Stack with Admin, No EFS, default VPC Check Snapshot 1`] = `
+exports[`Magento Stack with Admin, EFS, default VPC, ec2 Capacity Providers Check Snapshot 1`] = `
 Object {
   "Outputs": Object {
     "ClusterName": Object {
@@ -128,6 +128,10 @@ Object {
       "Default": "CertificateArn-magento.mydomain.com",
       "Type": "AWS::SSM::Parameter::Value<String>",
     },
+    "SsmParameterValueawsserviceecsoptimizedamiamazonlinux2recommendedimageidC96584B6F00A464EAD1953AFF4B05118Parameter": Object {
+      "Default": "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id",
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+    },
   },
   "Resources": Object {
     "AWS679f53fac002430cb0da5b7982bd22872D164C4C": Object {
@@ -182,11 +186,215 @@ Object {
       },
       "Type": "AWS::IAM::Role",
     },
+    "AsgASGD1D7B4E2": Object {
+      "Properties": Object {
+        "LaunchConfigurationName": Object {
+          "Ref": "AsgLaunchConfig6D4F96BB",
+        },
+        "MaxSize": "4",
+        "MetricsCollection": Array [
+          Object {
+            "Granularity": "1Minute",
+          },
+        ],
+        "MinSize": "1",
+        "NewInstancesProtectedFromScaleIn": true,
+        "Tags": Array [
+          Object {
+            "Key": "Name",
+            "PropagateAtLaunch": true,
+            "Value": "magento/Asg",
+          },
+        ],
+        "VPCZoneIdentifier": Array [
+          "p-12345",
+          "p-67890",
+        ],
+      },
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": Object {
+        "AutoScalingScheduledAction": Object {
+          "IgnoreUnmodifiedGroupSizeProperties": true,
+        },
+      },
+    },
+    "AsgInstanceProfileBCEDB827": Object {
+      "Properties": Object {
+        "Roles": Array [
+          Object {
+            "Ref": "AsgInstanceRole7946982D",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::InstanceProfile",
+    },
+    "AsgInstanceRole7946982D": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": "ec2.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": Array [
+          Object {
+            "Key": "Name",
+            "Value": "magento/Asg",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AsgInstanceRoleDefaultPolicy16A5BCED": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": Array [
+                "ecs:DeregisterContainerInstance",
+                "ecs:RegisterContainerInstance",
+                "ecs:Submit*",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::GetAtt": Array [
+                  "ClusterEB0386A7",
+                  "Arn",
+                ],
+              },
+            },
+            Object {
+              "Action": Array [
+                "ecs:Poll",
+                "ecs:StartTelemetrySession",
+              ],
+              "Condition": Object {
+                "ArnEquals": Object {
+                  "ecs:cluster": Object {
+                    "Fn::GetAtt": Array [
+                      "ClusterEB0386A7",
+                      "Arn",
+                    ],
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "ecs:DiscoverPollEndpoint",
+                "ecr:GetAuthorizationToken",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AsgInstanceRoleDefaultPolicy16A5BCED",
+        "Roles": Array [
+          Object {
+            "Ref": "AsgInstanceRole7946982D",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "AsgInstanceSecurityGroupC53F1492": Object {
+      "Properties": Object {
+        "GroupDescription": "magento/Asg/InstanceSecurityGroup",
+        "SecurityGroupEgress": Array [
+          Object {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "Tags": Array [
+          Object {
+            "Key": "Name",
+            "Value": "magento/Asg",
+          },
+        ],
+        "VpcId": "vpc-12345",
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "AsgLaunchConfig6D4F96BB": Object {
+      "DependsOn": Array [
+        "AsgInstanceRoleDefaultPolicy16A5BCED",
+        "AsgInstanceRole7946982D",
+      ],
+      "Properties": Object {
+        "IamInstanceProfile": Object {
+          "Ref": "AsgInstanceProfileBCEDB827",
+        },
+        "ImageId": Object {
+          "Ref": "SsmParameterValueawsserviceecsoptimizedamiamazonlinux2recommendedimageidC96584B6F00A464EAD1953AFF4B05118Parameter",
+        },
+        "InstanceMonitoring": true,
+        "InstanceType": "c5.xlarge",
+        "SecurityGroups": Array [
+          Object {
+            "Fn::GetAtt": Array [
+              "AsgInstanceSecurityGroupC53F1492",
+              "GroupId",
+            ],
+          },
+        ],
+        "UserData": Object {
+          "Fn::Base64": Object {
+            "Fn::Join": Array [
+              "",
+              Array [
+                "#!/bin/bash
+echo ECS_CLUSTER=",
+                Object {
+                  "Ref": "ClusterEB0386A7",
+                },
+                " >> /etc/ecs/ecs.config
+sudo iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP
+sudo service iptables save
+echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
+              ],
+            ],
+          },
+        },
+      },
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+    },
+    "CP1A08C5A07": Object {
+      "Properties": Object {
+        "AutoScalingGroupProvider": Object {
+          "AutoScalingGroupArn": Object {
+            "Ref": "AsgASGD1D7B4E2",
+          },
+          "ManagedScaling": Object {
+            "Status": "ENABLED",
+            "TargetCapacity": 100,
+          },
+          "ManagedTerminationProtection": "ENABLED",
+        },
+      },
+      "Type": "AWS::ECS::CapacityProvider",
+    },
     "Cluster3DA9CCBA": Object {
       "Properties": Object {
         "CapacityProviders": Array [
           "FARGATE",
           "FARGATE_SPOT",
+          Object {
+            "Ref": "CP1A08C5A07",
+          },
         ],
         "Cluster": Object {
           "Ref": "ClusterEB0386A7",
@@ -1109,7 +1317,7 @@ Object {
         },
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
-        "LaunchType": "FARGATE",
+        "LaunchType": "EC2",
         "NetworkConfiguration": Object {
           "AwsvpcConfiguration": Object {
             "AssignPublicIp": "DISABLED",
@@ -1127,7 +1335,7 @@ Object {
             ],
           },
         },
-        "PlatformVersion": "1.4.0",
+        "SchedulingStrategy": "REPLICA",
         "ServiceName": "MagentoServiceAdmin",
         "TaskDefinition": Object {
           "Ref": "MagentoServiceAdminTaskDefMagentoServiceAdminAA7BA266",
@@ -1349,7 +1557,6 @@ Object {
             "User": "daemon",
           },
         ],
-        "Cpu": "4096",
         "ExecutionRoleArn": Object {
           "Fn::GetAtt": Array [
             "MagentoServiceAdminTaskDefMagentoServiceAdminExecutionRole571D370E",
@@ -1357,10 +1564,9 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceAdminTaskDefMagentoServiceAdmin1FD61BFB",
-        "Memory": "30720",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
-          "FARGATE",
+          "EC2",
         ],
         "TaskRoleArn": Object {
           "Fn::GetAtt": Array [
@@ -1896,7 +2102,7 @@ Object {
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
         "HealthCheckGracePeriodSeconds": 120,
-        "LaunchType": "FARGATE",
+        "LaunchType": "EC2",
         "LoadBalancers": Array [
           Object {
             "ContainerName": "magento",
@@ -1923,7 +2129,7 @@ Object {
             ],
           },
         },
-        "PlatformVersion": "1.4.0",
+        "SchedulingStrategy": "REPLICA",
         "ServiceName": "MagentoService",
         "TaskDefinition": Object {
           "Ref": "MagentoServiceTaskDefMagentoService85828845",
@@ -2198,7 +2404,6 @@ Object {
             "User": "daemon",
           },
         ],
-        "Cpu": "4096",
         "ExecutionRoleArn": Object {
           "Fn::GetAtt": Array [
             "MagentoServiceTaskDefMagentoServiceExecutionRoleD8E8A4AF",
@@ -2206,10 +2411,9 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceTaskDefMagentoService88CCF536",
-        "Memory": "30720",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
-          "FARGATE",
+          "EC2",
         ],
         "TaskRoleArn": Object {
           "Fn::GetAtt": Array [

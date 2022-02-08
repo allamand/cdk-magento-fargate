@@ -1324,6 +1324,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
+            "Cpu": 4096,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1460,6 +1461,7 @@ Object {
                 "mode": "non-blocking",
               },
             },
+            "Memory": 30720,
             "Name": "magento",
             "PortMappings": Array [
               Object {

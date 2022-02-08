@@ -9,10 +9,13 @@ import {
   AwsLogDriver,
   AwsLogDriverMode,
   ContainerDefinitionOptions,
+  Ec2Service,
+  Ec2TaskDefinition,
   FargatePlatformVersion,
   FargateService,
   FargateTaskDefinition,
   ICluster,
+  NetworkMode,
 } from 'aws-cdk-lib/aws-ecs';
 import { AccessPoint, FileSystem } from 'aws-cdk-lib/aws-efs';
 import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -41,6 +44,11 @@ export interface MagentoServiceProps {
    * Cluster ECS
    */
   readonly cluster: ICluster;
+
+  /**
+   * This is EC2 cluster or Fargate cluster
+   */
+  readonly ec2Cluster: boolean;
 
   /*
    * magentoPassword
@@ -156,7 +164,7 @@ export interface MagentoServiceProps {
  ** //https://docs.aws.amazon.com/cdk/api/latest/docs/aws-ecs-readme.html
  */
 export class MagentoService extends Construct {
-  readonly service!: FargateService;
+  readonly service!: FargateService | Ec2Service;
   readonly alb!: ApplicationLoadBalancer;
   readonly hostName!: string;
   getService() {
@@ -231,11 +239,19 @@ export class MagentoService extends Construct {
     }
 
     //TODO: Which combination is the best for Magento ?
-    const taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
-      cpu: 4096,
-      memoryLimitMiB: 30720,
-    });
-
+    let taskDefinition: Ec2TaskDefinition | FargateTaskDefinition;
+    if (props.ec2Cluster) {
+      taskDefinition = new Ec2TaskDefinition(this, 'TaskDef' + id, {
+        //cpu: 4096,
+        //memoryLimitMiB: 30720,
+        networkMode: NetworkMode.AWS_VPC,
+      });
+    } else {
+      taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
+        cpu: 4096,
+        memoryLimitMiB: 30720,
+      });
+    }
     if (props.useEFS && props.efsFileSystem) {
       taskDefinition.addVolume({
         name: 'MagentoEfsVolume',
@@ -307,6 +323,8 @@ export class MagentoService extends Construct {
       environment: magentoEnvs,
       secrets: magentoSecrets,
       user: 'daemon',
+      cpu: 2048,
+      memoryLimitMiB: 8096,
     };
     const container = taskDefinition.addContainer('magento', containerDef);
 
@@ -365,17 +383,30 @@ export class MagentoService extends Construct {
      */
     var cluster = props.cluster;
 
-    //No Load Balancer for Admin Service
-    this.service = new FargateService(this, 'Service' + id, {
-      cluster,
-      serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
-      taskDefinition: taskDefinition,
-      //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
-      platformVersion: FargatePlatformVersion.VERSION1_4,
-      securityGroups: [props.serviceSG],
-      enableExecuteCommand: true,
-      healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
-    });
+    if (props.ec2Cluster) {
+      //No Load Balancer for Admin Service
+      this.service = new Ec2Service(this, 'Service' + id, {
+        cluster,
+        serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+        taskDefinition: taskDefinition,
+        //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
+        securityGroups: [props.serviceSG],
+        enableExecuteCommand: true,
+        healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
+      });
+    } else {
+      //No Load Balancer for Admin Service
+      this.service = new FargateService(this, 'Service' + id, {
+        cluster,
+        serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+        taskDefinition: taskDefinition,
+        //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
+        platformVersion: FargatePlatformVersion.VERSION1_4,
+        securityGroups: [props.serviceSG],
+        enableExecuteCommand: true,
+        healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
+      });
+    }
 
     new CfnOutput(stack, 'EcsExecCommand' + id, {
       value: `ecs_exec_service ${cluster.clusterName} ${this.service.serviceName} ${taskDefinition.defaultContainer?.containerName}`,
