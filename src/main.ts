@@ -29,6 +29,8 @@ import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineV
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cxapi from 'aws-cdk-lib/cx-api';
+import { aws_fsx as fsx } from 'aws-cdk-lib';
+import * as cfninc from 'aws-cdk-lib/cloudformation-include';
 import { Construct } from 'constructs';
 import { MagentoService } from './magento';
 
@@ -61,6 +63,7 @@ export class MagentoStack extends Stack {
     } else {
       vpc = new Vpc(this, 'VPC', { maxAzs: 2 });
     }
+    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
 
     const enablePrivateLink = this.node.tryGetContext('enablePrivateLink');
     if (enablePrivateLink == 'true') {
@@ -135,6 +138,17 @@ export class MagentoStack extends Stack {
     });
     new CfnOutput(stack, 'MagentoDatabasePasswordOutput', { value: magentoDatabasePassword.toString() });
 
+    /*
+     ** Configure Security Group for FsX
+     */
+    //docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html
+    const fsxSecurityGroup = new SecurityGroup(this, 'fsxSecurityGroup', {
+      vpc,
+      description: 'fsx service securitygroup',
+      allowAllOutbound: true,
+    });
+    fsxSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
+
     var ec2Cluster: boolean = false; // By default I uses Fargate Cluster
     const contextEc2Cluster = this.node.tryGetContext('ec2Cluster');
     if (contextEc2Cluster == 'yes' || contextEc2Cluster == 'true') {
@@ -143,6 +157,35 @@ export class MagentoStack extends Stack {
     let asg1: AutoScalingGroup;
     let cp1: AsgCapacityProvider;
     if (ec2Cluster) {
+      //https://github.com/PasseiDireto/gh-runner-ecs-ec2-stack/blob/cc6c13824bec5081e2d39a7adf7e9a2d0c8210a1/cluster.ts
+
+      //Create FsX OnTap storage
+      const cfnFileSystem = new fsx.CfnFileSystem(this, 'MyCfnFileSystem', {
+        fileSystemType: 'ONTAP',
+        subnetIds: privateSubnetIds,
+
+        // the properties below are optional
+        ontapConfiguration: {
+          deploymentType: 'MULTI_AZ_1',
+
+          // the properties below are optional
+          diskIopsConfiguration: {
+            iops: 40000,
+            mode: 'USER_PROVISIONED',
+          },
+          fsxAdminPassword: 'N3tapp1!',
+          preferredSubnetId: privateSubnetIds[0], //used for the writes
+          throughputCapacity: 256,
+        },
+        securityGroupIds: ['sg-09631c15e7759c6fb', 'sg-f96737ba'],
+        storageCapacity: 10240,
+        storageType: 'SSD',
+      });
+      const template = new cfninc.CfnInclude(this, 'Template', {
+        templateFile: 'lib/svm_volume.yaml',
+        preserveLogicalIds: false,
+      });
+
       asg1 = new AutoScalingGroup(this, 'Asg1', {
         vpc: vpc,
         machineImage: EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD),
@@ -155,6 +198,8 @@ export class MagentoStack extends Stack {
         groupMetrics: [GroupMetrics.all()],
         // https://github.com/aws/aws-cdk/issues/11581
       });
+
+      asg1.addUserData('sudo -s');
 
       cp1 = new AsgCapacityProvider(this, 'CP1', {
         autoScalingGroup: asg1,
@@ -208,12 +253,14 @@ export class MagentoStack extends Stack {
     const efsFileSystemSecurityGroup = new SecurityGroup(this, 'EfsFileSystemSecurityGroup', { vpc });
 
     //NFS security group which used for ec2 to copy file
+    //TODO: maybe thoses lines are not used anyzhere
     const sgNFSSG = new SecurityGroup(this, 'NFSAllowAllSG', {
       vpc: vpc,
       description: 'allow 2049 inbound for ec2',
       allowAllOutbound: true,
     });
     sgNFSSG.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
+    //end-TODO
 
     //ALB security group which allow 80 and 443
     const albSG = new SecurityGroup(this, 'albSG', {
@@ -275,8 +322,6 @@ export class MagentoStack extends Stack {
       },
       defaultDatabaseName: DB_NAME,
     });
-
-    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
 
     const elastiCacheSecurityGroup = new SecurityGroup(this, 'ElasticacheSecurityGroup', {
       vpc: vpc,
