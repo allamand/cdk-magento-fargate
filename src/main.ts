@@ -1,15 +1,15 @@
-import { CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
+import { aws_fsx as fsx, CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
 import { AutoScalingGroup, GroupMetrics, Monitoring } from 'aws-cdk-lib/aws-autoscaling';
 import {
+  InstanceClass,
+  InstanceSize,
+  InstanceType,
   InterfaceVpcEndpointAwsService,
   Peer,
   Port,
   SecurityGroup,
-  Vpc,
   SubnetType,
-  InstanceType,
-  InstanceClass,
-  InstanceSize,
+  Vpc,
 } from 'aws-cdk-lib/aws-ec2';
 import {
   AmiHardwareType,
@@ -21,13 +21,14 @@ import {
   ExecuteCommandLogging,
 } from 'aws-cdk-lib/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
-import { CfnSubnetGroup, CfnCacheCluster } from 'aws-cdk-lib/aws-elasticache';
+import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
 import { Key } from 'aws-cdk-lib/aws-kms';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
-import { Credentials, DatabaseCluster, DatabaseClusterEngine, AuroraMysqlEngineVersion } from 'aws-cdk-lib/aws-rds';
+import { AuroraMysqlEngineVersion, Credentials, DatabaseCluster, DatabaseClusterEngine } from 'aws-cdk-lib/aws-rds';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as cfninc from 'aws-cdk-lib/cloudformation-include';
 import * as cxapi from 'aws-cdk-lib/cx-api';
 import { Construct } from 'constructs';
 import { MagentoService } from './magento';
@@ -61,6 +62,14 @@ export class MagentoStack extends Stack {
     } else {
       vpc = new Vpc(this, 'VPC', { maxAzs: 2 });
     }
+    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
+
+    let privateRouteTablesIds: string[] = [];
+    vpc.privateSubnets.forEach((subnet) => {
+      privateRouteTablesIds.push(subnet.routeTable.routeTableId);
+    });
+
+    //new CfnOutput(this, 'privateroutetableid', { value: privateRouteTablesIds });
 
     const enablePrivateLink = this.node.tryGetContext('enablePrivateLink');
     if (enablePrivateLink == 'true') {
@@ -135,6 +144,50 @@ export class MagentoStack extends Stack {
     });
     new CfnOutput(stack, 'MagentoDatabasePasswordOutput', { value: magentoDatabasePassword.toString() });
 
+    /*
+     ** Configure Security Group for FsX
+     */
+    //docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html
+    const ec2SecurityGroup = new SecurityGroup(this, 'ec2SecurityGroup', {
+      vpc,
+      description: 'ec2 instance securitygroup',
+      allowAllOutbound: true,
+    });
+    const fsxSecurityGroup = new SecurityGroup(this, 'fsxSecurityGroup', {
+      vpc,
+      description: 'fsx service securitygroup',
+      allowAllOutbound: true,
+    });
+    fsxSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.icmpPing());
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(22));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(111));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(135));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(139));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(161));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(162));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(443));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(445));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(635));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(749));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(2049));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(3260));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4045));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4046));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11104));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11105));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(111));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(135));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(137));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(139));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(161));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(162));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(635));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(2049));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4045));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4046));
+    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4049));
+
     var ec2Cluster: boolean = false; // By default I uses Fargate Cluster
     const contextEc2Cluster = this.node.tryGetContext('ec2Cluster');
     if (contextEc2Cluster == 'yes' || contextEc2Cluster == 'true') {
@@ -143,18 +196,76 @@ export class MagentoStack extends Stack {
     let asg1: AutoScalingGroup;
     let cp1: AsgCapacityProvider;
     if (ec2Cluster) {
+      //https://github.com/PasseiDireto/gh-runner-ecs-ec2-stack/blob/cc6c13824bec5081e2d39a7adf7e9a2d0c8210a1/cluster.ts
+
+      //Create FsX OnTap storage
+      const cfnFileSystem = new fsx.CfnFileSystem(this, 'MyCfnFileSystem', {
+        fileSystemType: 'ONTAP',
+        subnetIds: [privateSubnetIds[0], privateSubnetIds[1]], // At most 2 subnets are allowed. (Service: AmazonFSx
+
+        // the properties below are optional
+        ontapConfiguration: {
+          deploymentType: 'MULTI_AZ_1',
+
+          // the properties below are optional
+          diskIopsConfiguration: {
+            iops: 40000,
+            mode: 'USER_PROVISIONED',
+          },
+          fsxAdminPassword: 'N3tapp1!', //TODO: configure this
+          preferredSubnetId: privateSubnetIds[0], //used for the writes
+          routeTableIds: privateRouteTablesIds,
+          throughputCapacity: 256,
+        },
+        securityGroupIds: [fsxSecurityGroup.securityGroupId],
+        storageCapacity: 10240,
+        storageType: 'SSD',
+      });
+
+      const template = new cfninc.CfnInclude(this, 'Template', {
+        templateFile: './src/svm_volume.yaml',
+        parameters: {
+          MagentoFsId: cfnFileSystem.ref,
+        },
+        preserveLogicalIds: false,
+      });
+
+      // const cfnSVM = template.getResource('magento');
+
+      var svmId = template.getResource('magentoSVM');
+      console.log(svmId.stack.getLogicalId);
+      //svmId.cfnOptions.
+
       asg1 = new AutoScalingGroup(this, 'Asg1', {
         vpc: vpc,
         machineImage: EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD),
 
-        instanceType: new InstanceType('c5.4xlarge'),
-
+        instanceType: new InstanceType('c5.4xlarge'), //TODO: configure this
+        securityGroup: ec2SecurityGroup,
         minCapacity: 1,
         maxCapacity: 4,
         instanceMonitoring: Monitoring.DETAILED,
         groupMetrics: [GroupMetrics.all()],
         // https://github.com/aws/aws-cdk/issues/11581
       });
+
+      var dnsName = `${svmId.ref}.${cfnFileSystem.ref}.fsx.${this.region}.amazonaws.com`;
+
+      const mountPath = '/mnt/fsx';
+      const mountName = '/datavol';
+
+      new CfnOutput(this, 'FsXDnsName', { value: dnsName });
+
+      asg1.userData.addCommands(
+        'sudo su',
+        'yum update -y',
+        // Set up the directory to mount the file system to and change the owner to the AL2 default ec2-user.
+        `mkdir -p ${mountPath}`,
+        `chown -R 1:1 ${mountPath}`,
+        // Set the file system up to mount automatically on start up and mount it.
+        `echo "${dnsName}:${mountName} ${mountPath} nfs4" >> /etc/fstab`,
+        'mount -a',
+      );
 
       cp1 = new AsgCapacityProvider(this, 'CP1', {
         autoScalingGroup: asg1,
@@ -208,12 +319,14 @@ export class MagentoStack extends Stack {
     const efsFileSystemSecurityGroup = new SecurityGroup(this, 'EfsFileSystemSecurityGroup', { vpc });
 
     //NFS security group which used for ec2 to copy file
+    //TODO: maybe thoses lines are not used anyzhere
     const sgNFSSG = new SecurityGroup(this, 'NFSAllowAllSG', {
       vpc: vpc,
       description: 'allow 2049 inbound for ec2',
       allowAllOutbound: true,
     });
     sgNFSSG.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
+    //end-TODO
 
     //ALB security group which allow 80 and 443
     const albSG = new SecurityGroup(this, 'albSG', {
@@ -275,8 +388,6 @@ export class MagentoStack extends Stack {
       },
       defaultDatabaseName: DB_NAME,
     });
-
-    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
 
     const elastiCacheSecurityGroup = new SecurityGroup(this, 'ElasticacheSecurityGroup', {
       vpc: vpc,
@@ -370,6 +481,12 @@ export class MagentoStack extends Stack {
     new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
     process.env.elasticsearch_host = osDomain.domainEndpoint;
 
+    var useFSX: boolean = false; // By default I don't want EFS, it's too slow
+    const contextUseFSX = this.node.tryGetContext('useFSX');
+    if (contextUseFSX == 'yes' || contextUseFSX == 'true') {
+      useFSX = true;
+    }
+
     var createEFS: boolean = false; // By default I don't want EFS, it's too slow
     const contextCreateEFS = this.node.tryGetContext('createEFS');
     if (contextCreateEFS == 'yes' || contextCreateEFS == 'true') {
@@ -380,6 +497,14 @@ export class MagentoStack extends Stack {
     if (contextUseEFS == 'yes' || contextUseEFS == 'true') {
       useEFS = true;
     }
+
+    if (useEFS && useFSX) {
+      throw 'useEFS and useFSX are exclusive';
+    }
+    if (useEFS && !createEFS) {
+      throw 'useEFS must be used with createEFS';
+    }
+
     var efsFileSystem: FileSystem;
     var fileSystemAccessPoint: AccessPoint;
     if (createEFS) {
@@ -417,7 +542,7 @@ export class MagentoStack extends Stack {
      ** Create our Magento Service, Load Balancer and Lookup Certificates and route53_zone
      */
     var magentoImage: AssetImage;
-    if (useEFS) {
+    if (useEFS || useFSX) {
       magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile' });
     } else {
       magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile.noefs' });
@@ -429,6 +554,7 @@ export class MagentoStack extends Stack {
       ec2Cluster: ec2Cluster,
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
+      useFSX: useFSX,
       useEFS: useEFS,
       efsFileSystem: efsFileSystem!,
       fileSystemAccessPoint: fileSystemAccessPoint!,
@@ -462,6 +588,7 @@ export class MagentoStack extends Stack {
         ec2Cluster: ec2Cluster,
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
+        useFSX: useFSX,
         useEFS: useEFS,
         efsFileSystem: efsFileSystem!,
         fileSystemAccessPoint: fileSystemAccessPoint!,

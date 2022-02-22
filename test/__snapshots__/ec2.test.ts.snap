@@ -2,6 +2,7 @@
 
 exports[`Magento Stack with Admin, EFS, default VPC, ec2 Capacity Providers Check Snapshot 1`] = `
 Object {
+  "AWSTemplateFormatVersion": "2010-09-09",
   "Outputs": Object {
     "ClusterName": Object {
       "Value": Object {
@@ -91,6 +92,23 @@ Object {
               "Ref": "opensearchAdminPasswordF9AAABC9",
             },
             ":SecretString:::}}",
+          ],
+        ],
+      },
+    },
+    "FsXDnsName": Object {
+      "Value": Object {
+        "Fn::Join": Array [
+          "",
+          Array [
+            Object {
+              "Ref": "TemplatemagentoSVM36525368",
+            },
+            ".",
+            Object {
+              "Ref": "MyCfnFileSystem",
+            },
+            ".fsx.us-east-1.amazonaws.com",
           ],
         ],
       },
@@ -309,26 +327,6 @@ Object {
       },
       "Type": "AWS::IAM::Policy",
     },
-    "Asg1InstanceSecurityGroupE2951C6F": Object {
-      "Properties": Object {
-        "GroupDescription": "magento/Asg1/InstanceSecurityGroup",
-        "SecurityGroupEgress": Array [
-          Object {
-            "CidrIp": "0.0.0.0/0",
-            "Description": "Allow all outbound traffic by default",
-            "IpProtocol": "-1",
-          },
-        ],
-        "Tags": Array [
-          Object {
-            "Key": "Name",
-            "Value": "magento/Asg1",
-          },
-        ],
-        "VpcId": "vpc-12345",
-      },
-      "Type": "AWS::EC2::SecurityGroup",
-    },
     "Asg1LaunchConfig13CB129F": Object {
       "DependsOn": Array [
         "Asg1InstanceRoleDefaultPolicyF3C02A48",
@@ -346,7 +344,7 @@ Object {
         "SecurityGroups": Array [
           Object {
             "Fn::GetAtt": Array [
-              "Asg1InstanceSecurityGroupE2951C6F",
+              "ec2SecurityGroup2F3DB50B",
               "GroupId",
             ],
           },
@@ -357,6 +355,20 @@ Object {
               "",
               Array [
                 "#!/bin/bash
+sudo su
+yum update -y
+mkdir -p /mnt/fsx
+chown -R 1:1 /mnt/fsx
+echo \\"",
+                Object {
+                  "Ref": "TemplatemagentoSVM36525368",
+                },
+                ".",
+                Object {
+                  "Ref": "MyCfnFileSystem",
+                },
+                ".fsx.us-east-1.amazonaws.com:/datavol /mnt/fsx nfs4\\" >> /etc/fstab
+mount -a
 echo ECS_CLUSTER=",
                 Object {
                   "Ref": "ClusterEB0386A7",
@@ -1420,7 +1432,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "Value": "production",
               },
               Object {
-                "Name": "MAGENTO_USE_EFS",
+                "Name": "MAGENTO_USE_FS",
                 "Value": "yes",
               },
               Object {
@@ -1476,7 +1488,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:0a38f109b8e432e40189ca434bbb1ac41771d5882a709fdd43bf989a42a61ac4",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:720eed27775527fcec297ab7a376acc6eda4ae77250db48fc44ad23c48958972",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -2267,7 +2279,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "Value": "production",
               },
               Object {
-                "Name": "MAGENTO_USE_EFS",
+                "Name": "MAGENTO_USE_FS",
                 "Value": "yes",
               },
               Object {
@@ -2323,7 +2335,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:0a38f109b8e432e40189ca434bbb1ac41771d5882a709fdd43bf989a42a61ac4",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:720eed27775527fcec297ab7a376acc6eda4ae77250db48fc44ad23c48958972",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -2726,6 +2738,40 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Retain",
     },
+    "MyCfnFileSystem": Object {
+      "Properties": Object {
+        "FileSystemType": "ONTAP",
+        "OntapConfiguration": Object {
+          "DeploymentType": "MULTI_AZ_1",
+          "DiskIopsConfiguration": Object {
+            "Iops": 40000,
+            "Mode": "USER_PROVISIONED",
+          },
+          "FsxAdminPassword": "N3tapp1!",
+          "PreferredSubnetId": "p-12345",
+          "RouteTableIds": Array [
+            "rtb-12345p",
+            "rtb-57890p",
+          ],
+          "ThroughputCapacity": 256,
+        },
+        "SecurityGroupIds": Array [
+          Object {
+            "Fn::GetAtt": Array [
+              "fsxSecurityGroupD7B7C1B4",
+              "GroupId",
+            ],
+          },
+        ],
+        "StorageCapacity": 10240,
+        "StorageType": "SSD",
+        "SubnetIds": Array [
+          "p-12345",
+          "p-67890",
+        ],
+      },
+      "Type": "AWS::FSx::FileSystem",
+    },
     "NFSAllowAllSG1B23B86D": Object {
       "Properties": Object {
         "GroupDescription": "allow 2049 inbound for ec2",
@@ -2781,6 +2827,32 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       },
       "Type": "AWS::ElastiCache::SubnetGroup",
     },
+    "TemplatedatavolEAF39683": Object {
+      "Properties": Object {
+        "Name": "datavol",
+        "OntapConfiguration": Object {
+          "JunctionPath": "/datavol",
+          "SecurityStyle": "MIXED",
+          "SizeInMegabytes": 102400,
+          "StorageEfficiencyEnabled": true,
+          "StorageVirtualMachineId": Object {
+            "Ref": "TemplatemagentoSVM36525368",
+          },
+        },
+        "VolumeType": "ONTAP",
+      },
+      "Type": "AWS::FSx::Volume",
+    },
+    "TemplatemagentoSVM36525368": Object {
+      "Properties": Object {
+        "FileSystemId": Object {
+          "Ref": "MyCfnFileSystem",
+        },
+        "Name": "magento",
+        "RootVolumeSecurityStyle": "MIXED",
+      },
+      "Type": "AWS::FSx::StorageVirtualMachine",
+    },
     "albSG8D3A1F76": Object {
       "Properties": Object {
         "GroupDescription": "allow 80 and 443",
@@ -2833,6 +2905,631 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         "VpcId": "vpc-12345",
       },
       "Type": "AWS::EC2::SecurityGroup",
+    },
+    "ec2SecurityGroup2F3DB50B": Object {
+      "Properties": Object {
+        "GroupDescription": "ec2 instance securitygroup",
+        "SecurityGroupEgress": Array [
+          Object {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": "vpc-12345",
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "fsxSecurityGroupD7B7C1B4": Object {
+      "Properties": Object {
+        "GroupDescription": "fsx service securitygroup",
+        "SecurityGroupEgress": Array [
+          Object {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "SecurityGroupIngress": Array [
+          Object {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "allow 2049 inbound from ec2",
+            "FromPort": 2049,
+            "IpProtocol": "tcp",
+            "ToPort": 2049,
+          },
+        ],
+        "VpcId": "vpc-12345",
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C21110459FC9829": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:11104",
+        "FromPort": 11104,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 11104,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C21110540650265": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:11105",
+        "FromPort": 11105,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 11105,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2111F546847B": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:111",
+        "FromPort": 111,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 111,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C213567531BDF": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:135",
+        "FromPort": 135,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 135,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C21392F139DCF": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:139",
+        "FromPort": 139,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 139,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2161A7B02E90": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:161",
+        "FromPort": 161,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 161,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2162E1486370": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:162",
+        "FromPort": 162,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 162,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C22049762C9FFA": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:2049",
+        "FromPort": 2049,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 2049,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2229F23F7F9": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:22",
+        "FromPort": 22,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 22,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2326006012859": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:3260",
+        "FromPort": 3260,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 3260,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C240456D314FE9": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:4045",
+        "FromPort": 4045,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 4045,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C240469A47B924": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:4046",
+        "FromPort": 4046,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 4046,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2443E1D1A349": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:443",
+        "FromPort": 443,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 443,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2445AA364224": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:445",
+        "FromPort": 445,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 445,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C263541CC9787": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:635",
+        "FromPort": 635,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 635,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2749A6320A5E": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:749",
+        "FromPort": 749,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 749,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2ICMPType806E268CD": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:ICMP Type 8",
+        "FromPort": 8,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "icmp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": -1,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP111E8E1BCB6": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 111",
+        "FromPort": 111,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 111,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP1352B3420BA": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 135",
+        "FromPort": 135,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 135,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP137DA7438CC": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 137",
+        "FromPort": 137,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 137,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP1391E1D7632": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 139",
+        "FromPort": 139,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 139,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP1612897014C": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 161",
+        "FromPort": 161,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 161,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP1620DE4F411": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 162",
+        "FromPort": 162,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 162,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP2049D468B370": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 2049",
+        "FromPort": 2049,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 2049,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP40453F6834B9": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 4045",
+        "FromPort": 4045,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 4045,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP40463270E111": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 4046",
+        "FromPort": 4046,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 4046,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP4049ECA9ADA1": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 4049",
+        "FromPort": 4049,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 4049,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "fsxSecurityGroupfrommagentoec2SecurityGroupEB38E4C2UDP63580922A72": Object {
+      "Properties": Object {
+        "Description": "from magentoec2SecurityGroupEB38E4C2:UDP 635",
+        "FromPort": 635,
+        "GroupId": Object {
+          "Fn::GetAtt": Array [
+            "fsxSecurityGroupD7B7C1B4",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "udp",
+        "SourceSecurityGroupId": Object {
+          "Fn::GetAtt": Array [
+            "ec2SecurityGroup2F3DB50B",
+            "GroupId",
+          ],
+        },
+        "ToPort": 635,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
     },
     "magentoAdminPasswordF18EEDF3": Object {
       "DeletionPolicy": "Delete",

@@ -16,7 +16,7 @@ describe('Magento Stack with Admin, EFS, default VPC, ec2 Capacity Providers', (
     },
   });
 
-  const stackName = process.env.CDK_STACK_NAME ? process.env.CDK_STACK_NAME : 'magento';
+  const stackName = 'magento';
   const clusterName = stackName;
 
   const devEnv = {

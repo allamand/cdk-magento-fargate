@@ -25,12 +25,12 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   context: {
     //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     enablePrivateLink: 'false', // this parameter seems to works only one
-    createEFS: 'yes', //CDK will create the EFS File System
+    createEFS: 'no', //CDK will create the EFS File System
     useEFS: 'no', //CDK will use the created file system in the ECS Task
+    useFSX: 'yes',
+    ec2Cluster: 'yes',
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
-
-    //os_domain_endpoint: 'search-magento-zwa5v3x4br3kgn4y5e5nu6hv7q.eu-west-1.es.amazonaws.com',
 
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'yes',
