@@ -13,7 +13,7 @@ describe('Magento Stack with No Admin, No EFS', () => {
     },
   });
 
-  const stackName = process.env.CDK_STACK_NAME ? process.env.CDK_STACK_NAME : 'magento';
+  const stackName = 'magento';
   const clusterName = stackName;
 
   const devEnv = {

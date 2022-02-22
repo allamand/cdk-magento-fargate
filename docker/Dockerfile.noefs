@@ -1,22 +1,9 @@
-#FROM public.ecr.aws/seb-demo/magento:magento2
-#FROM public.ecr.aws/seb-demo/magento:3.0.2
-#FROM public.ecr.aws/seb-demo/magento:4.0.4
 FROM public.ecr.aws/seb-demo/magento:5.0.2
 LABEL maintainer "Sébastien Allamand"
 
-## Install 'vim'
-#RUN install_packages vim
-
-
 USER root
-#RUN chown -R daemon:daemon /opt/bitnami/
-#RUN chown -R daemon:daemon /bitnami/magento
 RUN rm -f /opt/bitnami/apache/var/run/httpd.pid
 
-#COPY setup.sh /
-#Custom Entrypoint to update Magento Host
 COPY entrypoint.sh /opt/bitnami/scripts/magento/
-## Enable mod_ratelimit module
-#RUN sed -i -r 's/#LoadModule ratelimit_module/LoadModule ratelimit_module/' /opt/bitnami/apache/conf/httpd.conf
 
 USER daemon

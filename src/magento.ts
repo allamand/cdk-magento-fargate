@@ -62,6 +62,7 @@ export interface MagentoServiceProps {
 
   /**
    * Do we use EFS ?
+   * useFSX and useEFS are exclusives
    */
   readonly useEFS: boolean;
   /**
@@ -73,6 +74,11 @@ export interface MagentoServiceProps {
    * Efs AccessPoint to uses for the service
    */
   readonly fileSystemAccessPoint: AccessPoint;
+  /**
+   * Do we use FsX ONTAP ?
+   * useFSX and useEFS are exclusives
+   */
+  readonly useFSX: boolean;
 
   /**
    * Database Cluster
@@ -252,7 +258,14 @@ export class MagentoService extends Construct {
         memoryLimitMiB: 30720,
       });
     }
-    if (props.useEFS && props.efsFileSystem) {
+    if (props.useFSX) {
+      taskDefinition.addVolume({
+        name: 'MagentoFsxVolume',
+        host: {
+          sourcePath: '/mnt/fsx',
+        },
+      });
+    } else if (props.useEFS && props.efsFileSystem) {
       taskDefinition.addVolume({
         name: 'MagentoEfsVolume',
         efsVolumeConfiguration: {
@@ -281,7 +294,8 @@ export class MagentoService extends Construct {
       MAGENTO_ENABLE_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production',
-      MAGENTO_USE_EFS: props.useEFS ? 'yes' : 'no',
+      //Do we use Shared File System ? need to now for entrypoint script
+      MAGENTO_USE_FS: (props.useEFS || props.useFSX) ? 'yes' : 'no',
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
@@ -332,7 +346,13 @@ export class MagentoService extends Construct {
       containerPort: 8080,
     });
     // TODO - The best way to handle this by having /bitnami/magento/var/pub/media mount
-    if (props.useEFS) {
+    if (props.useFSX) {
+      container.addMountPoints({
+        readOnly: false,
+        containerPath: '/bitnami/magento',
+        sourceVolume: 'MagentoFsxVolume',
+      });
+    } else if (props.useEFS) {
       container.addMountPoints({
         readOnly: false,
         containerPath: '/bitnami/magento',

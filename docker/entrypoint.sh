@@ -38,7 +38,7 @@ fi
 
 
 
-if [[ "$MAGENTO_USE_EFS" = "yes" && -d /bitnami/magento/bin ]]; then
+if [[ "$MAGENTO_USE_FS" = "yes" && -d /bitnami/magento/bin ]]; then
 
     info "**update magento credentials"
     #TODO: do it only on Admin ?
