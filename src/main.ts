@@ -244,7 +244,7 @@ export class MagentoStack extends Stack {
         instanceType: new InstanceType('c5.4xlarge'), //TODO: configure this
         securityGroup: ec2SecurityGroup,
         minCapacity: 1,
-        maxCapacity: 4,
+        maxCapacity: 40,
         instanceMonitoring: Monitoring.DETAILED,
         groupMetrics: [GroupMetrics.all()],
         // https://github.com/aws/aws-cdk/issues/11581
@@ -577,7 +577,6 @@ export class MagentoStack extends Stack {
       cacheEndpoint: redis.attrRedisEndpointAddress,
     });
     magento;
-    magento.node.addDependency(cp1!);
     // if (props.createCluster && ec2Cluster) {
     //   magento.node.addDependency(cluster!);
     // }
