@@ -144,50 +144,6 @@ export class MagentoStack extends Stack {
     });
     new CfnOutput(stack, 'MagentoDatabasePasswordOutput', { value: magentoDatabasePassword.toString() });
 
-    /*
-     ** Configure Security Group for FsX
-     */
-    //docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html
-    const ec2SecurityGroup = new SecurityGroup(this, 'ec2SecurityGroup', {
-      vpc,
-      description: 'ec2 instance securitygroup',
-      allowAllOutbound: true,
-    });
-    const fsxSecurityGroup = new SecurityGroup(this, 'fsxSecurityGroup', {
-      vpc,
-      description: 'fsx service securitygroup',
-      allowAllOutbound: true,
-    });
-    fsxSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.icmpPing());
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(22));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(111));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(135));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(139));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(161));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(162));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(443));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(445));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(635));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(749));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(2049));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(3260));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4045));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4046));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11104));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11105));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(111));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(135));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(137));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(139));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(161));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(162));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(635));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(2049));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4045));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4046));
-    fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4049));
-
     var ec2Cluster: boolean = false; // By default I uses Fargate Cluster
     const contextEc2Cluster = this.node.tryGetContext('ec2Cluster');
     if (contextEc2Cluster == 'yes' || contextEc2Cluster == 'true') {
@@ -197,6 +153,50 @@ export class MagentoStack extends Stack {
     let cp1: AsgCapacityProvider;
     if (ec2Cluster) {
       //https://github.com/PasseiDireto/gh-runner-ecs-ec2-stack/blob/cc6c13824bec5081e2d39a7adf7e9a2d0c8210a1/cluster.ts
+
+      /*
+       ** Configure Security Group for FsX
+       */
+      //docs.aws.amazon.com/fsx/latest/ONTAPGuide/limit-access-security-groups.html
+      const ec2SecurityGroup = new SecurityGroup(this, 'ec2SecurityGroup', {
+        vpc,
+        description: 'ec2 instance securitygroup',
+        allowAllOutbound: true,
+      });
+      const fsxSecurityGroup = new SecurityGroup(this, 'fsxSecurityGroup', {
+        vpc,
+        description: 'fsx service securitygroup',
+        allowAllOutbound: true,
+      });
+      fsxSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(2049), 'allow 2049 inbound from ec2');
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.icmpPing());
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(22));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(111));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(135));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(139));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(161));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(162));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(443));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(445));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(635));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(749));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(2049));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(3260));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4045));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(4046));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11104));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.tcp(11105));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(111));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(135));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(137));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(139));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(161));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(162));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(635));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(2049));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4045));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4046));
+      fsxSecurityGroup.addIngressRule(ec2SecurityGroup, Port.udp(4049));
 
       //Create FsX OnTap storage
       const cfnFileSystem = new fsx.CfnFileSystem(this, 'MyCfnFileSystem', {
@@ -238,6 +238,7 @@ export class MagentoStack extends Stack {
 
       asg1 = new AutoScalingGroup(this, 'Asg1', {
         vpc: vpc,
+        //autoScalingGroupName: id,
         machineImage: EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD),
 
         instanceType: new InstanceType('c5.4xlarge'), //TODO: configure this
@@ -261,17 +262,20 @@ export class MagentoStack extends Stack {
         'yum update -y',
         // Set up the directory to mount the file system to and change the owner to the AL2 default ec2-user.
         `mkdir -p ${mountPath}`,
-        `chown -R 1:1 ${mountPath}`,
+        `chown 1:1 ${mountPath}`,
         // Set the file system up to mount automatically on start up and mount it.
-        `echo "${dnsName}:${mountName} ${mountPath} nfs4" >> /etc/fstab`,
+        //echo "${dnsName}:${mountName} ${mountPath} nfs4 vers=3,rsize=8192,wsize=8192,nocto,nconnect=8" >> /etc/fsta
+        //`echo "${dnsName}:${mountName} ${mountPath} nfs vers=3,rsize=262144,wsize=262144,nocto,nconnect=8" >> /etc/fstab`,
+        `echo "${dnsName}:${mountName} ${mountPath} nfs vers=3,rsize=262144,wsize=262144,nocto 0 0" >> /etc/fstab`,
         'mount -a',
       );
 
       cp1 = new AsgCapacityProvider(this, 'CP1', {
+        //capacityProviderName: props.clusterName,
         autoScalingGroup: asg1,
         enableManagedScaling: true,
         enableManagedTerminationProtection: true,
-        targetCapacityPercent: 100, //don't over-provisionning
+        targetCapacityPercent: 80, //do some over-provisionning
       });
     }
 
@@ -552,6 +556,7 @@ export class MagentoStack extends Stack {
       vpc: vpc,
       cluster: cluster!,
       ec2Cluster: ec2Cluster,
+      capacityProviderName: ec2Cluster ? cp1!.capacityProviderName : 'undefined',
       magentoPassword: magentoPassword,
       magentoImage: magentoImage,
       useFSX: useFSX,
@@ -571,7 +576,11 @@ export class MagentoStack extends Stack {
       serviceSG: serviceSG,
       cacheEndpoint: redis.attrRedisEndpointAddress,
     });
-
+    magento;
+    magento.node.addDependency(cp1!);
+    // if (props.createCluster && ec2Cluster) {
+    //   magento.node.addDependency(cluster!);
+    // }
     //allow to communicate with OpenSearch
     openSearchSG.addIngressRule(serviceSG, Port.allTraffic(), 'allow traffic fom ECS service');
     serviceSG.addIngressRule(openSearchSG, Port.allTraffic(), 'allow traffic fom Opensearch');
@@ -582,10 +591,11 @@ export class MagentoStack extends Stack {
       ? this.node.tryGetContext('magento_admin_task_debug')
       : 'no';
     if (magentoAdminTask == 'yes') {
-      new MagentoService(this, 'MagentoServiceAdmin', {
+      const magentoServiceAdmin = new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,
         cluster: cluster!,
         ec2Cluster: ec2Cluster,
+        capacityProviderName: ec2Cluster ? cp1!.capacityProviderName : 'undefined',
         magentoPassword: magentoPassword,
         magentoImage: magentoImage,
         useFSX: useFSX,
@@ -608,6 +618,8 @@ export class MagentoStack extends Stack {
         mainStackALB: magento.getALB(),
         cacheEndpoint: redis.attrRedisEndpointAddress,
       });
+      magentoServiceAdmin;
+      //magentoServiceAdmin.node.addDependency(cluster);
     }
   }
 }

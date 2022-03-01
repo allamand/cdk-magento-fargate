@@ -13,7 +13,9 @@ build:
 	npx projen build
 	
 deploy: projen
-	npx cdk deploy --require-approval=never
+	npx cdk deploy --require-approval=never 
+deploy-no-rollback : projen
+	npx cdk deploy --require-approval=never --no-rollback 
 
 destroy:
 	npx cdk destroy

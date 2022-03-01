@@ -49,6 +49,7 @@ export interface MagentoServiceProps {
    * This is EC2 cluster or Fargate cluster
    */
   readonly ec2Cluster: boolean;
+  readonly capacityProviderName: string;
 
   /*
    * magentoPassword
@@ -295,7 +296,7 @@ export class MagentoService extends Construct {
       MAGENTO_ENABLE_ADMIN_HTTPS: r53DomainZone ? 'yes' : 'no',
       MAGENTO_MODE: 'production',
       //Do we use Shared File System ? need to now for entrypoint script
-      MAGENTO_USE_FS: (props.useEFS || props.useFSX) ? 'yes' : 'no',
+      MAGENTO_USE_FS: props.useEFS || props.useFSX ? 'yes' : 'no',
 
       MAGENTO_DATABASE_HOST: props.db.clusterEndpoint.hostname,
       MAGENTO_DATABASE_PORT_NUMBER: '3306',
@@ -412,6 +413,12 @@ export class MagentoService extends Construct {
         //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
         securityGroups: [props.serviceSG],
         enableExecuteCommand: true,
+        capacityProviderStrategies: [
+          {
+            capacityProvider: props.capacityProviderName,
+            weight: 100,
+          },
+        ],
         healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
       });
     } else {
@@ -443,13 +450,13 @@ export class MagentoService extends Construct {
         ],
         healthCheck: {
           healthyThresholdCount: 2, // Min 2
-          unhealthyThresholdCount: 10, // MAx 10
-          timeout: Duration.seconds(120),
-          interval: Duration.seconds(125),
+          unhealthyThresholdCount: 3, // MAx 10
+          timeout: Duration.seconds(30),
+          interval: Duration.seconds(40),
           healthyHttpCodes: '200-499',
           path: '/',
         },
-        deregistrationDelay: Duration.seconds(120),
+        deregistrationDelay: Duration.minutes(5),
       });
 
       const scalableTarget = this.service.autoScaleTaskCount({
@@ -460,8 +467,8 @@ export class MagentoService extends Construct {
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
         targetUtilizationPercent: 50,
         scaleOutCooldown: Duration.seconds(60),
-        scaleInCooldown: Duration.seconds(120),
-        disableScaleIn: true,
+        scaleInCooldown: Duration.seconds(10),
+        disableScaleIn: false,
       });
 
       // scalableTarget.scaleOnRequestCount('RequestScaling', {
