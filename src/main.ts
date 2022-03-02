@@ -586,9 +586,11 @@ export class MagentoStack extends Stack {
 
     // Add Magento Admin Task
     const magentoAdminTask = this.node.tryGetContext('magento_admin_task');
-    const magentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug')
-      ? this.node.tryGetContext('magento_admin_task_debug')
-      : 'no';
+    var magentoAdminTaskDebug: boolean = false;
+    const contextMagentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug');
+    if (contextMagentoAdminTaskDebug =='yes' || contextMagentoAdminTaskDebug == 'true') {
+      magentoAdminTaskDebug = true;
+    }
     if (magentoAdminTask == 'yes') {
       const magentoServiceAdmin = new MagentoService(this, 'MagentoServiceAdmin', {
         vpc: vpc,

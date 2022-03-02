@@ -209,7 +209,7 @@ Object {
         "LaunchConfigurationName": Object {
           "Ref": "Asg1LaunchConfig13CB129F",
         },
-        "MaxSize": "4",
+        "MaxSize": "40",
         "MetricsCollection": Array [
           Object {
             "Granularity": "1Minute",
@@ -358,7 +358,7 @@ Object {
 sudo su
 yum update -y
 mkdir -p /mnt/fsx
-chown -R 1:1 /mnt/fsx
+chown 1:1 /mnt/fsx
 echo \\"",
                 Object {
                   "Ref": "TemplatemagentoSVM36525368",
@@ -367,7 +367,7 @@ echo \\"",
                 Object {
                   "Ref": "MyCfnFileSystem",
                 },
-                ".fsx.us-east-1.amazonaws.com:/datavol /mnt/fsx nfs4\\" >> /etc/fstab
+                ".fsx.us-east-1.amazonaws.com:/datavol /mnt/fsx nfs vers=3,rsize=262144,wsize=262144,nocto 0 0\\" >> /etc/fstab
 mount -a
 echo ECS_CLUSTER=",
                 Object {
@@ -392,7 +392,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
           },
           "ManagedScaling": Object {
             "Status": "ENABLED",
-            "TargetCapacity": 100,
+            "TargetCapacity": 80,
           },
           "ManagedTerminationProtection": "ENABLED",
         },
@@ -1320,6 +1320,14 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
     },
     "MagentoServiceAdminServiceMagentoServiceAdminService2DF18265": Object {
       "Properties": Object {
+        "CapacityProviderStrategy": Array [
+          Object {
+            "CapacityProvider": Object {
+              "Ref": "CP1A08C5A07",
+            },
+            "Weight": 100,
+          },
+        ],
         "Cluster": Object {
           "Ref": "ClusterEB0386A7",
         },
@@ -1329,7 +1337,6 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         },
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
-        "LaunchType": "EC2",
         "NetworkConfiguration": Object {
           "AwsvpcConfiguration": Object {
             "AssignPublicIp": "DISABLED",
@@ -1359,11 +1366,6 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Command": Array [
-              "tail",
-              "-f",
-              "/dev/null",
-            ],
             "Cpu": 2048,
             "Environment": Array [
               Object {
@@ -1488,7 +1490,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:720eed27775527fcec297ab7a376acc6eda4ae77250db48fc44ad23c48958972",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -1972,9 +1974,9 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
     },
     "MagentoServiceMagentoServiceALBMagentoServiceListenerMagentoServiceTargetsGroup69B87B3F": Object {
       "Properties": Object {
-        "HealthCheckIntervalSeconds": 125,
+        "HealthCheckIntervalSeconds": 40,
         "HealthCheckPath": "/",
-        "HealthCheckTimeoutSeconds": 120,
+        "HealthCheckTimeoutSeconds": 30,
         "HealthyThresholdCount": 2,
         "Matcher": Object {
           "HttpCode": "200-499",
@@ -2001,7 +2003,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         "TargetGroupAttributes": Array [
           Object {
             "Key": "deregistration_delay.timeout_seconds",
-            "Value": "120",
+            "Value": "300",
           },
           Object {
             "Key": "stickiness.enabled",
@@ -2009,7 +2011,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
           },
         ],
         "TargetType": "ip",
-        "UnhealthyThresholdCount": 10,
+        "UnhealthyThresholdCount": 3,
         "VpcId": "vpc-12345",
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
@@ -2104,6 +2106,14 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         "MagentoServiceMagentoServiceALBMagentoServiceListener8F85A69A",
       ],
       "Properties": Object {
+        "CapacityProviderStrategy": Array [
+          Object {
+            "CapacityProvider": Object {
+              "Ref": "CP1A08C5A07",
+            },
+            "Weight": 100,
+          },
+        ],
         "Cluster": Object {
           "Ref": "ClusterEB0386A7",
         },
@@ -2114,7 +2124,6 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         "EnableECSManagedTags": false,
         "EnableExecuteCommand": true,
         "HealthCheckGracePeriodSeconds": 120,
-        "LaunchType": "EC2",
         "LoadBalancers": Array [
           Object {
             "ContainerName": "magento",
@@ -2196,11 +2205,11 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
           "Ref": "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB",
         },
         "TargetTrackingScalingPolicyConfiguration": Object {
-          "DisableScaleIn": true,
+          "DisableScaleIn": false,
           "PredefinedMetricSpecification": Object {
             "PredefinedMetricType": "ECSServiceAverageCPUUtilization",
           },
-          "ScaleInCooldown": 120,
+          "ScaleInCooldown": 10,
           "ScaleOutCooldown": 60,
           "TargetValue": 50,
         },
@@ -2335,7 +2344,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:720eed27775527fcec297ab7a376acc6eda4ae77250db48fc44ad23c48958972",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
