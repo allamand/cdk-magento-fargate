@@ -258,16 +258,16 @@ export class MagentoStack extends Stack {
       new CfnOutput(this, 'FsXDnsName', { value: dnsName });
 
       asg1.userData.addCommands(
-        'sudo su',
-        'yum update -y',
+        //'sudo su',
+        //'yum update -y',
         // Set up the directory to mount the file system to and change the owner to the AL2 default ec2-user.
         `mkdir -p ${mountPath}`,
-        `chown 1:1 ${mountPath}`,
         // Set the file system up to mount automatically on start up and mount it.
         //echo "${dnsName}:${mountName} ${mountPath} nfs4 vers=3,rsize=8192,wsize=8192,nocto,nconnect=8" >> /etc/fsta
         //`echo "${dnsName}:${mountName} ${mountPath} nfs vers=3,rsize=262144,wsize=262144,nocto,nconnect=8" >> /etc/fstab`,
         `echo "${dnsName}:${mountName} ${mountPath} nfs vers=3,rsize=262144,wsize=262144,nocto 0 0" >> /etc/fstab`,
         'mount -a',
+        `chown 1:1 ${mountPath}`,
       );
 
       cp1 = new AsgCapacityProvider(this, 'CP1', {
@@ -588,7 +588,7 @@ export class MagentoStack extends Stack {
     const magentoAdminTask = this.node.tryGetContext('magento_admin_task');
     var magentoAdminTaskDebug: boolean = false;
     const contextMagentoAdminTaskDebug = this.node.tryGetContext('magento_admin_task_debug');
-    if (contextMagentoAdminTaskDebug =='yes' || contextMagentoAdminTaskDebug == 'true') {
+    if (contextMagentoAdminTaskDebug == 'yes' || contextMagentoAdminTaskDebug == 'true') {
       magentoAdminTaskDebug = true;
     }
     if (magentoAdminTask == 'yes') {
