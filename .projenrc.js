@@ -8,7 +8,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   copyrightOwner: 'Amazon.com, Inc. or its affiliates. All Rights Reserved.',
   keywords: ['aws', 'constructs', 'cdk', 'ecs', 'magento'],
 
-  cdkVersion: '2.10.0',
+  cdkVersion: '2.15.0',
   defaultReleaseBranch: 'main',
   license: 'MIT-0',
   name: 'cdk-magento-fargate',
@@ -33,7 +33,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     //route53_domain_zone: 'ecs.demo3.allamand.com',
 
     magento_admin_task: 'yes',
-    magento_admin_task_debug: 'yes',
+    magento_admin_task_debug: 'no',
   },
 
   gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD'],

@@ -51,6 +51,7 @@ npx npm i projen -D
 $ git init
 $ npm init -y
 $ npm i projen -D
+$ #git defender --setup // activate git defender if required
 $ npx projen new awscdk-app-ts
 ```
 

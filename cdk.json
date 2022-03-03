@@ -7,7 +7,7 @@
     "useFSX": "yes",
     "ec2Cluster": "yes",
     "magento_admin_task": "yes",
-    "magento_admin_task_debug": "yes"
+    "magento_admin_task_debug": "no"
   },
   "output": "cdk.out",
   "build": "npx projen bundle",

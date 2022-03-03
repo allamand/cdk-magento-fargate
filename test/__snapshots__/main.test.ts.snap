@@ -1139,7 +1139,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 2048,
+            "Cpu": 8192,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1263,7 +1263,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -1988,7 +1988,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 2048,
+            "Cpu": 8192,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -2112,7 +2112,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -3950,7 +3950,7 @@ Object {
               "-f",
               "/dev/null",
             ],
-            "Cpu": 2048,
+            "Cpu": 8192,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -4074,7 +4074,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -4799,7 +4799,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 2048,
+            "Cpu": 8192,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -4923,7 +4923,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:b58ee6d22ff838b94f23b057e779d89368db2f96d33373dead596c641f87581d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",

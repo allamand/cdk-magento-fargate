@@ -1324,7 +1324,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 2048,
+            "Cpu": 8192,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1448,7 +1448,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:c89257af846d0a4fa13d48c4cc75c3f923cffad4bf4582c99633c14aa88d3a3a",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:6098f5e5fd89c7d9505c727fe980e64aaa07efb3755c2585346e244e92c4cfa8",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
