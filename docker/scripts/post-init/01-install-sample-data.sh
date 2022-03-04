@@ -52,11 +52,13 @@ END
   echo "*Install 1*"
   install_sample
 
-    echo "*Install 2*"
-  install_sample
-
-  #   echo "*Install 3*"
+  #It needs to be 2 times in order to work..
+  # echo "*Install 2*"
   # install_sample
+  echo "Install 2 - ensure all is good"
+  php -d memory_limit=-1 bin/magento setup:upgrade
+  php -d memory_limit=-1 bin/magento setup:static-content:deploy -f
+  php -d memory_limit=-1 bin/magento cache:flush
 
   echo "*writing INIT result file*"
   touch /bitnami/magento/__INIT_IS_OK__
