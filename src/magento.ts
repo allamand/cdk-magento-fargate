@@ -249,13 +249,11 @@ export class MagentoService extends Construct {
     let taskDefinition: Ec2TaskDefinition | FargateTaskDefinition;
     if (props.ec2Cluster) {
       taskDefinition = new Ec2TaskDefinition(this, 'TaskDef' + id, {
-        //cpu: 4096,
-        //memoryLimitMiB: 30720,
         networkMode: NetworkMode.AWS_VPC,
       });
     } else {
       taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
-        cpu: 4096,
+        cpu: 2048,
         memoryLimitMiB: 30720,
       });
     }
@@ -309,7 +307,7 @@ export class MagentoService extends Construct {
       MAGENTO_ELASTICSEARCH_ENABLE_AUTH: 'yes',
       MAGENTO_ELASTICSEARCH_USER: props.osUser,
 
-      PHP_MEMORY_LIMIT: '4G',
+      PHP_MEMORY_LIMIT: '7G',
     };
     const magentoMarketplaceSecrets = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -339,7 +337,7 @@ export class MagentoService extends Construct {
       secrets: magentoSecrets,
       user: 'daemon',
       cpu: 2048,
-      memoryLimitMiB: 8096,
+      memoryLimitMiB: 8192,
     };
     const container = taskDefinition.addContainer('magento', containerDef);
 
@@ -408,9 +406,8 @@ export class MagentoService extends Construct {
       //No Load Balancer for Admin Service
       this.service = new Ec2Service(this, 'Service' + id, {
         cluster,
-        serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
+        serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service, change the name if you need to perform updates, and change it back to original to keep Dashboard working
         taskDefinition: taskDefinition,
-        //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
         securityGroups: [props.serviceSG],
         enableExecuteCommand: true,
         capacityProviderStrategies: [
@@ -421,13 +418,22 @@ export class MagentoService extends Construct {
         ],
         healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
       });
+
+      // Specify binpack by memory and spread across availability zone as placement strategies.
+      // To place randomly, call: service.placeRandomly()
+      if (!props.magentoAdminTask) {
+        (this.service as ecs.Ec2Service).addPlacementStrategies(
+          ecs.PlacementStrategy.packedByMemory(),
+          ecs.PlacementStrategy.packedByCpu(),
+          ecs.PlacementStrategy.spreadAcross(ecs.BuiltInAttributes.AVAILABILITY_ZONE),
+        );
+      }
     } else {
       //No Load Balancer for Admin Service
       this.service = new FargateService(this, 'Service' + id, {
         cluster,
         serviceName: id, // when specifying service name, this prevent CDK to apply change to existing service Resource of type 'AWS::ECS::Service' with identifier 'eksutils' already exists.
         taskDefinition: taskDefinition,
-        //desiredCount: props.debug ? 1 : 0, //TODO: fhow handle desired state when doing autoscaling
         platformVersion: FargatePlatformVersion.VERSION1_4,
         securityGroups: [props.serviceSG],
         enableExecuteCommand: true,
@@ -450,7 +456,7 @@ export class MagentoService extends Construct {
         ],
         healthCheck: {
           healthyThresholdCount: 2, // Min 2
-          unhealthyThresholdCount: 3, // MAx 10
+          unhealthyThresholdCount: 10, // MAx 10
           timeout: Duration.seconds(30),
           interval: Duration.seconds(40),
           healthyHttpCodes: '200-499',
@@ -460,19 +466,28 @@ export class MagentoService extends Construct {
       });
 
       const scalableTarget = this.service.autoScaleTaskCount({
-        minCapacity: 1,
-        maxCapacity: 50,
+        minCapacity: 5,
+        maxCapacity: 100,
       });
 
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
         targetUtilizationPercent: 50,
-        scaleOutCooldown: Duration.seconds(60),
+        scaleOutCooldown: Duration.seconds(10),
+        scaleInCooldown: Duration.seconds(10),
+        disableScaleIn: false,
+      });
+
+      scalableTarget.scaleOnMemoryUtilization('MemoryScaling', {
+        targetUtilizationPercent: 50,
+        scaleOutCooldown: Duration.seconds(10),
         scaleInCooldown: Duration.seconds(10),
         disableScaleIn: false,
       });
 
       // scalableTarget.scaleOnRequestCount('RequestScaling', {
-      //   requestsPerTarget: 10000,
+      //   requestsPerTarget: 50,
+      //   scaleOutCooldown: Duration.seconds(10),
+      //   scaleInCooldown: Duration.seconds(120),
       //   targetGroup: target,
       // });
       target;

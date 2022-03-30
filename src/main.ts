@@ -1,15 +1,20 @@
 import { aws_fsx as fsx, CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
-import { AutoScalingGroup, GroupMetrics, Monitoring } from 'aws-cdk-lib/aws-autoscaling';
 import {
-  InstanceClass,
-  InstanceSize,
+  AutoScalingGroup,
+  BlockDevice,
+  BlockDeviceVolume,
+  EbsDeviceVolumeType,
+  GroupMetrics,
+  Monitoring
+} from 'aws-cdk-lib/aws-autoscaling';
+import {
   InstanceType,
   InterfaceVpcEndpointAwsService,
   Peer,
   Port,
   SecurityGroup,
   SubnetType,
-  Vpc,
+  Vpc
 } from 'aws-cdk-lib/aws-ec2';
 import {
   AmiHardwareType,
@@ -18,10 +23,11 @@ import {
   Cluster,
   ContainerImage,
   EcsOptimizedImage,
-  ExecuteCommandLogging,
+  ExecuteCommandLogging
 } from 'aws-cdk-lib/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
 import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
+import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { Key } from 'aws-cdk-lib/aws-kms';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
@@ -230,25 +236,42 @@ export class MagentoStack extends Stack {
         preserveLogicalIds: false,
       });
 
-      // const cfnSVM = template.getResource('magento');
-
       var svmId = template.getResource('magentoSVM');
-      console.log(svmId.stack.getLogicalId);
-      //svmId.cfnOptions.
 
+      const asgRole = new Role(this, 'AsgRole', {
+        assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
+      });
+      const ssmManagedPolicy = ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore');
+      asgRole.addManagedPolicy(ssmManagedPolicy);
+
+      //gp3 block device for instances
+      const blockDeviceVolume = BlockDeviceVolume.ebs(30, {
+        deleteOnTermination: true,
+        encrypted: false,
+        volumeType: EbsDeviceVolumeType.GP3,
+      });
+
+      const blockDevice: BlockDevice = {
+        deviceName: '/dev/xvda',
+        volume: blockDeviceVolume,
+      };
+
+      const ec2InstanceType = this.node.tryGetContext('ec2InstanceType') || 'c5.xlarge';
       asg1 = new AutoScalingGroup(this, 'Asg1', {
         vpc: vpc,
         //autoScalingGroupName: id,
         machineImage: EcsOptimizedImage.amazonLinux2(AmiHardwareType.STANDARD),
 
-        instanceType: new InstanceType('c5.4xlarge'), //TODO: configure this
+        instanceType: new InstanceType(ec2InstanceType),
         securityGroup: ec2SecurityGroup,
         minCapacity: 1,
         maxCapacity: 40,
         instanceMonitoring: Monitoring.DETAILED,
         groupMetrics: [GroupMetrics.all()],
         // https://github.com/aws/aws-cdk/issues/11581
-      });
+        role: asgRole,
+        blockDevices: [blockDevice],
+      }); //asg1.addToRolePolicy()
 
       var dnsName = `${svmId.ref}.${cfnFileSystem.ref}.fsx.${this.region}.amazonaws.com`;
 
@@ -275,7 +298,7 @@ export class MagentoStack extends Stack {
         autoScalingGroup: asg1,
         enableManagedScaling: true,
         enableManagedTerminationProtection: true,
-        targetCapacityPercent: 80, //do some over-provisionning
+        targetCapacityPercent: 100, //do some over-provisionning
       });
     }
 
@@ -380,6 +403,7 @@ export class MagentoStack extends Stack {
 
     //const secret = SecretValue.plainText(magentoDatabasePassword.toString());
     const secret = magentoDatabasePassword.secretValue;
+    const rdsInstanceType = this.node.tryGetContext('rdsInstanceType') || 'r6g.large';
     const db = new DatabaseCluster(this, 'MagentoAuroraCluster', {
       engine: DatabaseClusterEngine.auroraMysql({ version: AuroraMysqlEngineVersion.VER_2_10_1 }),
       credentials: Credentials.fromPassword(DB_USER, secret),
@@ -387,7 +411,8 @@ export class MagentoStack extends Stack {
       instances: 1,
       instanceProps: {
         vpc: vpc,
-        instanceType: InstanceType.of(InstanceClass.MEMORY6_GRAVITON, InstanceSize.LARGE),
+        //instanceType: InstanceType.of(InstanceClass.MEMORY6_GRAVITON, InstanceSize.XLARGE16),
+        instanceType: new InstanceType(rdsInstanceType),
         securityGroups: [rdsSG],
       },
       defaultDatabaseName: DB_NAME,
@@ -409,7 +434,7 @@ export class MagentoStack extends Stack {
 
     const redis = new CfnCacheCluster(this, 'RedisCluster', {
       engine: 'redis',
-      cacheNodeType: 'cache.r6g.large',
+      cacheNodeType: 'cache.r6g.4xlarge',
       numCacheNodes: 1,
       clusterName: `${stackName}magento-elasticache`,
       vpcSecurityGroupIds: [elastiCacheSecurityGroup.securityGroupId],

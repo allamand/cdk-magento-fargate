@@ -29,6 +29,8 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     useEFS: 'no', //CDK will use the created file system in the ECS Task
     useFSX: 'yes',
     ec2Cluster: 'yes',
+    ec2InstanceType: 'c5.9xlarge',
+    rdsInstanceType: 'r6g.8xlarge',
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
 

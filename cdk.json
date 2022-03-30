@@ -6,6 +6,8 @@
     "useEFS": "no",
     "useFSX": "yes",
     "ec2Cluster": "yes",
+    "ec2InstanceType": "c5.9xlarge",
+    "rdsInstanceType": "r6g.8xlarge",
     "magento_admin_task": "yes",
     "magento_admin_task_debug": "no"
   },
