@@ -1857,7 +1857,7 @@ Object {
         "RedisClusterPrivateSubnetGroup",
       ],
       "Properties": Object {
-        "CacheNodeType": "cache.r6g.4xlarge",
+        "CacheNodeType": "cache.r6g.large",
         "CacheSubnetGroupName": "magento-redis-cache",
         "ClusterName": "magentomagento-elasticache",
         "Engine": "redis",
