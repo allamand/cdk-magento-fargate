@@ -5,7 +5,7 @@ import {
   BlockDeviceVolume,
   EbsDeviceVolumeType,
   GroupMetrics,
-  Monitoring
+  Monitoring,
 } from 'aws-cdk-lib/aws-autoscaling';
 import {
   InstanceType,
@@ -14,7 +14,7 @@ import {
   Port,
   SecurityGroup,
   SubnetType,
-  Vpc
+  Vpc,
 } from 'aws-cdk-lib/aws-ec2';
 import {
   AmiHardwareType,
@@ -23,7 +23,7 @@ import {
   Cluster,
   ContainerImage,
   EcsOptimizedImage,
-  ExecuteCommandLogging
+  ExecuteCommandLogging,
 } from 'aws-cdk-lib/aws-ecs';
 import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
 import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
@@ -432,9 +432,10 @@ export class MagentoStack extends Stack {
       description: 'Private Subnet Group for Magento Elasticache',
     });
 
+    const cacheInstanceType = this.node.tryGetContext('cacheInstanceType') || 'r6g.large';
     const redis = new CfnCacheCluster(this, 'RedisCluster', {
       engine: 'redis',
-      cacheNodeType: 'cache.r6g.4xlarge',
+      cacheNodeType: 'cache.'+cacheInstanceType,
       numCacheNodes: 1,
       clusterName: `${stackName}magento-elasticache`,
       vpcSecurityGroupIds: [elastiCacheSecurityGroup.securityGroupId],

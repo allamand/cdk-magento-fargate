@@ -1114,7 +1114,7 @@ Object {
           },
         ],
         "TargetType": "ip",
-        "UnhealthyThresholdCount": 3,
+        "UnhealthyThresholdCount": 10,
         "VpcId": Object {
           "Ref": "VPCB9E5F0B4",
         },
@@ -1264,8 +1264,8 @@ Object {
     },
     "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB": Object {
       "Properties": Object {
-        "MaxCapacity": 50,
-        "MinCapacity": 1,
+        "MaxCapacity": 100,
+        "MinCapacity": 5,
         "ResourceId": Object {
           "Fn::Join": Array [
             "",
@@ -1314,7 +1314,26 @@ Object {
             "PredefinedMetricType": "ECSServiceAverageCPUUtilization",
           },
           "ScaleInCooldown": 10,
-          "ScaleOutCooldown": 60,
+          "ScaleOutCooldown": 10,
+          "TargetValue": 50,
+        },
+      },
+      "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
+    },
+    "MagentoServiceServiceMagentoServiceTaskCountTargetMemoryScaling926D5E55": Object {
+      "Properties": Object {
+        "PolicyName": "magentoMagentoServiceServiceMagentoServiceTaskCountTargetMemoryScaling1AF95EBD",
+        "PolicyType": "TargetTrackingScaling",
+        "ScalingTargetId": Object {
+          "Ref": "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB",
+        },
+        "TargetTrackingScalingPolicyConfiguration": Object {
+          "DisableScaleIn": false,
+          "PredefinedMetricSpecification": Object {
+            "PredefinedMetricType": "ECSServiceAverageMemoryUtilization",
+          },
+          "ScaleInCooldown": 10,
+          "ScaleOutCooldown": 10,
           "TargetValue": 50,
         },
       },
@@ -1324,7 +1343,7 @@ Object {
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 8192,
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1443,12 +1462,12 @@ Object {
               },
               Object {
                 "Name": "PHP_MEMORY_LIMIT",
-                "Value": "4G",
+                "Value": "7G",
               },
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:6098f5e5fd89c7d9505c727fe980e64aaa07efb3755c2585346e244e92c4cfa8",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:9061e5a5a7277a892a21d1e136e25ec6c02e5cc00947377a7d69f38dd859eb3f",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -1461,7 +1480,7 @@ Object {
                 "mode": "non-blocking",
               },
             },
-            "Memory": 8096,
+            "Memory": 8192,
             "Name": "magento",
             "PortMappings": Array [
               Object {
@@ -1522,7 +1541,7 @@ Object {
             "User": "daemon",
           },
         ],
-        "Cpu": "4096",
+        "Cpu": "2048",
         "ExecutionRoleArn": Object {
           "Fn::GetAtt": Array [
             "MagentoServiceTaskDefMagentoServiceExecutionRoleD8E8A4AF",
@@ -1838,7 +1857,7 @@ Object {
         "RedisClusterPrivateSubnetGroup",
       ],
       "Properties": Object {
-        "CacheNodeType": "cache.r6g.large",
+        "CacheNodeType": "cache.r6g.4xlarge",
         "CacheSubnetGroupName": "magento-redis-cache",
         "ClusterName": "magentomagento-elasticache",
         "Engine": "redis",

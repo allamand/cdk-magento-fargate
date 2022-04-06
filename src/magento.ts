@@ -278,7 +278,7 @@ export class MagentoService extends Construct {
     }
     const magentoUser = this.node.tryGetContext('magento_user') ? this.node.tryGetContext('magento_user') : 'magento';
 
-    const magentoEnvs: { [key: string]: string } = {
+    const magentoEnvs: {[key: string]: string} = {
       BITNAMI_DEBUG: 'true',
       MAGENTO_USERNAME: magentoUser,
 

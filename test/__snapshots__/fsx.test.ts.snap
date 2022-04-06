@@ -240,13 +240,79 @@ Object {
       "Properties": Object {
         "Roles": Array [
           Object {
-            "Ref": "Asg1InstanceRoleA17A0106",
+            "Ref": "AsgRole72D95731",
           },
         ],
       },
       "Type": "AWS::IAM::InstanceProfile",
     },
-    "Asg1InstanceRoleA17A0106": Object {
+    "Asg1LaunchConfig13CB129F": Object {
+      "DependsOn": Array [
+        "AsgRoleDefaultPolicyF8CEEAD2",
+        "AsgRole72D95731",
+      ],
+      "Properties": Object {
+        "BlockDeviceMappings": Array [
+          Object {
+            "DeviceName": "/dev/xvda",
+            "Ebs": Object {
+              "DeleteOnTermination": true,
+              "Encrypted": false,
+              "VolumeSize": 30,
+              "VolumeType": "gp3",
+            },
+          },
+        ],
+        "IamInstanceProfile": Object {
+          "Ref": "Asg1InstanceProfileF0687320",
+        },
+        "ImageId": Object {
+          "Ref": "SsmParameterValueawsserviceecsoptimizedamiamazonlinux2recommendedimageidC96584B6F00A464EAD1953AFF4B05118Parameter",
+        },
+        "InstanceMonitoring": true,
+        "InstanceType": "c5.xlarge",
+        "SecurityGroups": Array [
+          Object {
+            "Fn::GetAtt": Array [
+              "ec2SecurityGroup2F3DB50B",
+              "GroupId",
+            ],
+          },
+        ],
+        "UserData": Object {
+          "Fn::Base64": Object {
+            "Fn::Join": Array [
+              "",
+              Array [
+                "#!/bin/bash
+mkdir -p /mnt/fsx
+echo \\"",
+                Object {
+                  "Ref": "TemplatemagentoSVM36525368",
+                },
+                ".",
+                Object {
+                  "Ref": "MyCfnFileSystem",
+                },
+                ".fsx.us-east-1.amazonaws.com:/datavol /mnt/fsx nfs vers=3,rsize=262144,wsize=262144,nocto 0 0\\" >> /etc/fstab
+mount -a
+chown 1:1 /mnt/fsx
+echo ECS_CLUSTER=",
+                Object {
+                  "Ref": "ClusterEB0386A7",
+                },
+                " >> /etc/ecs/ecs.config
+sudo iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP
+sudo service iptables save
+echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
+              ],
+            ],
+          },
+        },
+      },
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+    },
+    "AsgRole72D95731": Object {
       "Properties": Object {
         "AssumeRolePolicyDocument": Object {
           "Statement": Array [
@@ -260,16 +326,24 @@ Object {
           ],
           "Version": "2012-10-17",
         },
-        "Tags": Array [
+        "ManagedPolicyArns": Array [
           Object {
-            "Key": "Name",
-            "Value": "magento/Asg1",
+            "Fn::Join": Array [
+              "",
+              Array [
+                "arn:",
+                Object {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/AmazonSSMManagedInstanceCore",
+              ],
+            ],
           },
         ],
       },
       "Type": "AWS::IAM::Role",
     },
-    "Asg1InstanceRoleDefaultPolicyF3C02A48": Object {
+    "AsgRoleDefaultPolicyF8CEEAD2": Object {
       "Properties": Object {
         "PolicyDocument": Object {
           "Statement": Array [
@@ -318,69 +392,14 @@ Object {
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "Asg1InstanceRoleDefaultPolicyF3C02A48",
+        "PolicyName": "AsgRoleDefaultPolicyF8CEEAD2",
         "Roles": Array [
           Object {
-            "Ref": "Asg1InstanceRoleA17A0106",
+            "Ref": "AsgRole72D95731",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
-    },
-    "Asg1LaunchConfig13CB129F": Object {
-      "DependsOn": Array [
-        "Asg1InstanceRoleDefaultPolicyF3C02A48",
-        "Asg1InstanceRoleA17A0106",
-      ],
-      "Properties": Object {
-        "IamInstanceProfile": Object {
-          "Ref": "Asg1InstanceProfileF0687320",
-        },
-        "ImageId": Object {
-          "Ref": "SsmParameterValueawsserviceecsoptimizedamiamazonlinux2recommendedimageidC96584B6F00A464EAD1953AFF4B05118Parameter",
-        },
-        "InstanceMonitoring": true,
-        "InstanceType": "c5.4xlarge",
-        "SecurityGroups": Array [
-          Object {
-            "Fn::GetAtt": Array [
-              "ec2SecurityGroup2F3DB50B",
-              "GroupId",
-            ],
-          },
-        ],
-        "UserData": Object {
-          "Fn::Base64": Object {
-            "Fn::Join": Array [
-              "",
-              Array [
-                "#!/bin/bash
-mkdir -p /mnt/fsx
-echo \\"",
-                Object {
-                  "Ref": "TemplatemagentoSVM36525368",
-                },
-                ".",
-                Object {
-                  "Ref": "MyCfnFileSystem",
-                },
-                ".fsx.us-east-1.amazonaws.com:/datavol /mnt/fsx nfs vers=3,rsize=262144,wsize=262144,nocto 0 0\\" >> /etc/fstab
-mount -a
-chown 1:1 /mnt/fsx
-echo ECS_CLUSTER=",
-                Object {
-                  "Ref": "ClusterEB0386A7",
-                },
-                " >> /etc/ecs/ecs.config
-sudo iptables --insert FORWARD 1 --in-interface docker+ --destination 169.254.169.254/32 --jump DROP
-sudo service iptables save
-echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
-              ],
-            ],
-          },
-        },
-      },
-      "Type": "AWS::AutoScaling::LaunchConfiguration",
     },
     "CP1A08C5A07": Object {
       "Properties": Object {
@@ -390,7 +409,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
           },
           "ManagedScaling": Object {
             "Status": "ENABLED",
-            "TargetCapacity": 80,
+            "TargetCapacity": 100,
           },
           "ManagedTerminationProtection": "ENABLED",
         },
@@ -1288,7 +1307,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 8192,
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -1407,12 +1426,12 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
               },
               Object {
                 "Name": "PHP_MEMORY_LIMIT",
-                "Value": "4G",
+                "Value": "7G",
               },
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -1425,7 +1444,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "mode": "non-blocking",
               },
             },
-            "Memory": 8096,
+            "Memory": 8192,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
@@ -1903,7 +1922,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
           },
         ],
         "TargetType": "ip",
-        "UnhealthyThresholdCount": 3,
+        "UnhealthyThresholdCount": 10,
         "VpcId": "vpc-12345",
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
@@ -2042,6 +2061,20 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             ],
           },
         },
+        "PlacementStrategies": Array [
+          Object {
+            "Field": "memory",
+            "Type": "binpack",
+          },
+          Object {
+            "Field": "cpu",
+            "Type": "binpack",
+          },
+          Object {
+            "Field": "attribute:ecs.availability-zone",
+            "Type": "spread",
+          },
+        ],
         "SchedulingStrategy": "REPLICA",
         "ServiceName": "MagentoService",
         "TaskDefinition": Object {
@@ -2052,8 +2085,8 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
     },
     "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB": Object {
       "Properties": Object {
-        "MaxCapacity": 50,
-        "MinCapacity": 1,
+        "MaxCapacity": 100,
+        "MinCapacity": 5,
         "ResourceId": Object {
           "Fn::Join": Array [
             "",
@@ -2102,7 +2135,26 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
             "PredefinedMetricType": "ECSServiceAverageCPUUtilization",
           },
           "ScaleInCooldown": 10,
-          "ScaleOutCooldown": 60,
+          "ScaleOutCooldown": 10,
+          "TargetValue": 50,
+        },
+      },
+      "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
+    },
+    "MagentoServiceServiceMagentoServiceTaskCountTargetMemoryScaling926D5E55": Object {
+      "Properties": Object {
+        "PolicyName": "magentoMagentoServiceServiceMagentoServiceTaskCountTargetMemoryScaling1AF95EBD",
+        "PolicyType": "TargetTrackingScaling",
+        "ScalingTargetId": Object {
+          "Ref": "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB",
+        },
+        "TargetTrackingScalingPolicyConfiguration": Object {
+          "DisableScaleIn": false,
+          "PredefinedMetricSpecification": Object {
+            "PredefinedMetricType": "ECSServiceAverageMemoryUtilization",
+          },
+          "ScaleInCooldown": 10,
+          "ScaleOutCooldown": 10,
           "TargetValue": 50,
         },
       },
@@ -2112,7 +2164,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
       "Properties": Object {
         "ContainerDefinitions": Array [
           Object {
-            "Cpu": 8192,
+            "Cpu": 2048,
             "Environment": Array [
               Object {
                 "Name": "BITNAMI_DEBUG",
@@ -2231,12 +2283,12 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
               },
               Object {
                 "Name": "PHP_MEMORY_LIMIT",
-                "Value": "4G",
+                "Value": "7G",
               },
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:a09a52e27badefe7b52ca42d4fd257514d849e9a06f47bde1652ee2ebce4a8da",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -2249,7 +2301,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
                 "mode": "non-blocking",
               },
             },
-            "Memory": 8096,
+            "Memory": 8192,
             "MountPoints": Array [
               Object {
                 "ContainerPath": "/bitnami/magento",
@@ -2671,7 +2723,7 @@ echo ECS_AWSVPC_BLOCK_IMDS=true >> /etc/ecs/ecs.config",
         "RedisClusterPrivateSubnetGroup",
       ],
       "Properties": Object {
-        "CacheNodeType": "cache.r6g.large",
+        "CacheNodeType": "cache.r6g.4xlarge",
         "CacheSubnetGroupName": "magento-redis-cache",
         "ClusterName": "magentomagento-elasticache",
         "Engine": "redis",

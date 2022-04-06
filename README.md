@@ -79,14 +79,19 @@ pj
 
 You will need to create AWS Secrets for Magento MarketPlace Credentials.
 
-First If you don't already have Adobe Magento accoutm you can create one on https://devdocs.magento.com/guides/v2.3/install-gde/prereq/connect-auth.html and then you will populate Magento secrets in AWS SecretManager with name : **MAGENTO_MARKETPLACE** and value/pair:
+First If you don't already have Adobe Magento accoutm you can create one on https://devdocs.magento.com/guides/v2.3/install-gde/prereq/connect-auth.html 
 
+Go to My `Account/Marketplace/Access Keys` and create a New Access Key.
+
+and then you will populate Magento secrets in AWS SecretManager with name : **MAGENTO_MARKETPLACE** and value/pair:
 ```
 | Secret key  | Secret Value                      |
 | ----------- | --------------------------------- |
 | private-key | **private-key-from-magento-site** |
 | public-key  | **public-key-from-magento-site**  |
 ```
+
+> Be careful the copy button may introduce a space in the credentials, you need to remove it.
 
 ### Project Configuration
 
@@ -209,10 +214,41 @@ We propose two ways to configure your magento website.
 1. Using a build Pipelineallowing to configure the final magento website into a big Docker Image, and then uses this Image in the `docker/Dockerfile.noefs` 
 2. Using the Admin task, allowing to connect to an empty magento website, and configure it in the running phase.
 
+### Warm up page cache
+
+Caching pages in solution like Magento is really mandatory for production workloads. Everytime a user requess come in, magento PHP code is invoked to generate the page, the page is served to the user, and then the page is stored in cache for next time. In this solution we rely on AWS Elasticache as the caching layer for our generated pages.
+
+This process is fairly time-consuming, also if we take into account that the php code maybe stored on a shared file system like EFS or FsX Ontap.
+
+With the crawler, you can accelerate this process by letting magento know thants to a special header that the request is all about cache generation and it does not need toserved the page, only to cache it.
+
+Additionaly, you can uses the crawler to refresh expired pages at regular intervals, so that the changes that a user will encounter an uncached page is significantly diminished, and makes your site faster.
+
+#### Generate a Sitemap
+
+The crawler will needs to know what page your site offer, so we will generate a Sitemap using Magento2 built-in module:
+
+Magento 2 has a builtin module for generating a sitemap and it’s fast.
+Navigate to Magento Admin > Stores > Settings > Configuration > Catalog > XML Sitemap
+Set Generation Settings > Enabled to Yes
+Navigate to Magento Admin > Marketing > Seo & Search > Sitemap
+Click the Add Sitemap button.
+Set Filename = sitemap.xml and Path = /
+Click the Save & Generate button
+A sitemap.xml file will be generated in your Magento 2 document root.
+
+#### Uses the LiteSpeed cache crawler script
+
+Here we rely on LiteSpeed crawler script for Magento. You can [download](https://www.litespeedtech.com/packages/litemage2.0/M2-crawler.sh) it here and execute from the place of your choice:
+
+```
+bash M2-crawler.sh https://www.example.com/sitemap.xml
+```
 
 ### Using a build Pipeline 
 
-//TODO
+You can create a whole docker image containing all the modules and data for your site and then providing this image to run. By default, this repository build images in the `docker` directory, and you can replace this with your custom build.
+Depending on your needs you may or not need a shared file system with this custom setup and would like to activate or deactivate tje `useEFS` or `useFSX` deployment flags.
 
 ### Using the Admin Task
 
@@ -309,6 +345,27 @@ If you get an error in magento, you can find corresponding log in
 ```
 /bitnami/magento/var/report/<error_id>
 ```
+
+If the error is like 
+```
+{"0":"Unable to retrieve deployment version of static files from the file system."
+...
+```
+
+Generally a solution for that is to rebuild some commands:
+
+Connect to MagentoServiceAdmin Task, and execute the following commands in it
+
+```
+ecs_exec_service magento72 MagentoServiceAdmin magento 
+root@ip-10-0-155-249:/# su daemon -s /bin/bash
+root@ip-10-0-155-249:/# cd /bitnami/magento
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento setup:upgrade
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento setup:upgrade
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento cache:flush
+```
+
+You may also need to rebuild your cache with the crawler.
 
 ### Mysql
 

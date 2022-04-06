@@ -1,4 +1,4 @@
-const { awscdk } = require('projen');
+const {awscdk} = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',
@@ -31,6 +31,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     ec2Cluster: 'yes',
     ec2InstanceType: 'c5.9xlarge',
     rdsInstanceType: 'r6g.8xlarge',
+    cacheInstanceType: 'r6g.8xlarge',
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
 
