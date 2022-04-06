@@ -1,4 +1,4 @@
-const {awscdk} = require('projen');
+const { awscdk } = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',

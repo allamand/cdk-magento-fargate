@@ -1549,7 +1549,7 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceTaskDefMagentoService88CCF536",
-        "Memory": "30720",
+        "Memory": "8192",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
           "FARGATE",
