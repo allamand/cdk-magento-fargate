@@ -1263,7 +1263,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:882acf2b6f34e8fafc94597550e54fdfa8e95988f1ca202dd15aea550781d6e3",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -1352,7 +1352,7 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceAdminTaskDefMagentoServiceAdmin1FD61BFB",
-        "Memory": "30720",
+        "Memory": "8192",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
           "FARGATE",
@@ -2131,7 +2131,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:882acf2b6f34e8fafc94597550e54fdfa8e95988f1ca202dd15aea550781d6e3",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -2220,7 +2220,7 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceTaskDefMagentoService88CCF536",
-        "Memory": "30720",
+        "Memory": "8192",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
           "FARGATE",
@@ -4093,7 +4093,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:882acf2b6f34e8fafc94597550e54fdfa8e95988f1ca202dd15aea550781d6e3",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -4182,7 +4182,7 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceAdminTaskDefMagentoServiceAdmin1FD61BFB",
-        "Memory": "30720",
+        "Memory": "8192",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
           "FARGATE",
@@ -4961,7 +4961,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:fe0837a58a471887980d06b385da70a54e18d3a8edb83ad843bc4e91235c746d",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:882acf2b6f34e8fafc94597550e54fdfa8e95988f1ca202dd15aea550781d6e3",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
@@ -5050,7 +5050,7 @@ Object {
           ],
         },
         "Family": "magentoMagentoServiceTaskDefMagentoService88CCF536",
-        "Memory": "30720",
+        "Memory": "8192",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": Array [
           "FARGATE",

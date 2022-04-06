@@ -252,9 +252,10 @@ export class MagentoService extends Construct {
         networkMode: NetworkMode.AWS_VPC,
       });
     } else {
+      //Need to respect valid cpu/memory Fargate options: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html
       taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
         cpu: 2048,
-        memoryLimitMiB: 30720,
+        memoryLimitMiB: 8192,
       });
     }
     if (props.useFSX) {
@@ -429,6 +430,7 @@ export class MagentoService extends Construct {
         );
       }
     } else {
+      // Fargate Cluster
       //No Load Balancer for Admin Service
       this.service = new FargateService(this, 'Service' + id, {
         cluster,
