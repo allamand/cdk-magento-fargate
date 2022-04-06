@@ -51,6 +51,7 @@ npx npm i projen -D
 $ git init
 $ npm init -y
 $ npm i projen -D
+$ #git defender --setup // activate git defender if required
 $ npx projen new awscdk-app-ts
 ```
 
@@ -78,7 +79,11 @@ pj
 
 You will need to create AWS Secrets for Magento MarketPlace Credentials.
 
-First If you don't already have Adobe Magento accoutm you can create one on https://devdocs.magento.com/guides/v2.3/install-gde/prereq/connect-auth.html and then you will populate Magento secrets in AWS SecretManager with name : **MAGENTO_MARKETPLACE** and value/pair:
+First If you don't already have Adobe Magento accoutm you can create one on https://devdocs.magento.com/guides/v2.3/install-gde/prereq/connect-auth.html
+
+Go to My `Account/Marketplace/Access Keys` and create a New Access Key.
+
+and then you will populate Magento secrets in AWS SecretManager with name : **MAGENTO_MARKETPLACE** and value/pair:
 
 ```
 | Secret key  | Secret Value                      |
@@ -86,6 +91,8 @@ First If you don't already have Adobe Magento accoutm you can create one on http
 | private-key | **private-key-from-magento-site** |
 | public-key  | **public-key-from-magento-site**  |
 ```
+
+> Be careful the copy button may introduce a space in the credentials, you need to remove it.
 
 ### Project Configuration
 
@@ -141,7 +148,8 @@ After updating the **context** section, you will need to run again `pj` in order
 - **createEFS** yes/no. if yes, create an EFS volume (@default: no)
 - **useEFS** yes/no. if yes, map /bitnami/magento directory to the EFS created file system (@default: no)
 - **useFSX** yes/no. if yes, create an FsX File System and map /bitnami/magento directory to the FSX created file system (@default: no)
-> useFSX and useEFS are mutual exclusive.
+
+  > useFSX and useEFS are mutual exclusive.
 
 - **ec2Cluster**: yes/no. if yes, create an EC2 base cluster with Autoscaling group and Capacity Providers (@default: no = Fargate Cluster)
 
@@ -201,17 +209,48 @@ pj deploy
 
 The deploy action will apply the CDK generated CloudFormation template to your AWS Account. (Note, the services deployed here will incur costs in your account).
 
-
 ## Install magento demo content
 
 We propose two ways to configure your magento website.
-1. Using a build Pipelineallowing to configure the final magento website into a big Docker Image, and then uses this Image in the `docker/Dockerfile.noefs` 
+
+1. Using a build Pipelineallowing to configure the final magento website into a big Docker Image, and then uses this Image in the `docker/Dockerfile.noefs`
 2. Using the Admin task, allowing to connect to an empty magento website, and configure it in the running phase.
 
+### Warm up page cache
 
-### Using a build Pipeline 
+Caching pages in solution like Magento is really mandatory for production workloads. Everytime a user requess come in, magento PHP code is invoked to generate the page, the page is served to the user, and then the page is stored in cache for next time. In this solution we rely on AWS Elasticache as the caching layer for our generated pages.
 
-//TODO
+This process is fairly time-consuming, also if we take into account that the php code maybe stored on a shared file system like EFS or FsX Ontap.
+
+With the crawler, you can accelerate this process by letting magento know thants to a special header that the request is all about cache generation and it does not need toserved the page, only to cache it.
+
+Additionaly, you can uses the crawler to refresh expired pages at regular intervals, so that the changes that a user will encounter an uncached page is significantly diminished, and makes your site faster.
+
+#### Generate a Sitemap
+
+The crawler will needs to know what page your site offer, so we will generate a Sitemap using Magento2 built-in module:
+
+Magento 2 has a builtin module for generating a sitemap and it’s fast.
+Navigate to Magento Admin > Stores > Settings > Configuration > Catalog > XML Sitemap
+Set Generation Settings > Enabled to Yes
+Navigate to Magento Admin > Marketing > Seo & Search > Sitemap
+Click the Add Sitemap button.
+Set Filename = sitemap.xml and Path = /
+Click the Save & Generate button
+A sitemap.xml file will be generated in your Magento 2 document root.
+
+#### Uses the LiteSpeed cache crawler script
+
+Here we rely on LiteSpeed crawler script for Magento. You can [download](https://www.litespeedtech.com/packages/litemage2.0/M2-crawler.sh) it here and execute from the place of your choice:
+
+```
+bash M2-crawler.sh https://www.example.com/sitemap.xml
+```
+
+### Using a build Pipeline
+
+You can create a whole docker image containing all the modules and data for your site and then providing this image to run. By default, this repository build images in the `docker` directory, and you can replace this with your custom build.
+Depending on your needs you may or not need a shared file system with this custom setup and would like to activate or deactivate tje `useEFS` or `useFSX` deployment flags.
 
 ### Using the Admin Task
 
@@ -223,6 +262,7 @@ This will create a secure shell (The session is encrypted with a dedicated AWS K
 Below are example script that can be used to install Magento sample data (https://github.com/magento/magento2-sample-data): `/install_sample_datas.sh`
 
 Connect to the Admin task and execute the script:
+
 ```
 $ ecs_exec_service magento MagentoServiceAdmin magento
 root@ip-10-0-137-105:/# /install_sample_datas.sh
@@ -231,7 +271,7 @@ root@ip-10-0-137-105:/# /install_sample_datas.sh
 To test the service is working you can now connect to the service Task
 
 ```bash
-$ ecs_exec_service magento MagentoService magento  
+$ ecs_exec_service magento MagentoService magento
 root@ip-10-0-145-190:/# curl -H "Host: $MAGENTO_HOST" localhost:8080
 
 ```
@@ -264,6 +304,13 @@ ecs_exec_service magento MagentoServiceDebug magento
 
 ### Troubleshoot first install
 
+The bootstrapping of Magento is done with 2 steps:
+
+1. The MagentoServiceAdmin tasks needs to do the bootstrap, and execute the `docker-entrypoint-init.d/01-install-sample-data.sh` script.
+   1. when finished it will create a specific file `/bitnami/magento/__INIT_IS_OK__` on the shared file system (EFS or FsX)
+2. The MagentoService tasks will not boot until the specific file exists
+   1. Once the file exists, magento will start on MagentoService tasks.
+
 When Magento starts, it will execute the following command this must be done using the `daemon` user.:
 
 ```bash
@@ -271,8 +318,11 @@ su daemon -s /bin/bash
 /opt/bitnami/scripts/magento/entrypoint.sh /opt/bitnami/scripts/magento/run.sh
 ```
 
-If the Task didn't start properly, you can exec into the debug pod and manually execute the previous command to help figure out where comes the problem is. 
-- This can be credentials issues, like bad passwords format :
+If the Task didn't start properly, you can exec into the MagentoServiceAdmin task and manually execute the previous command to help figure out where comes the problem is.
+
+- This can be Magento Marketplace credentials issues
+- This can be bad ElasticSearch passwords format :
+
   ```
   In SearchConfig.php line 81:
 
@@ -280,6 +330,8 @@ If the Task didn't start properly, you can exec into the debug pod and manually 
     ps://magento-master-os:beavqpdh.Kzm4?6WqtJHv4e0Lj3AioyI@search-magento-zwa5
     v3x4br3kgn4y5e5nu6hv7q.eu-west-1.es.amazonaws.com:443"
   ```
+
+> If there was a bootstrap error and the specific file `/bitnami/magento/__INIT_IS_OK__` was created, you may need to manually delete it so the bootstrap process can try again.
 
 ### Debug Magento Apache configuration
 
@@ -300,14 +352,35 @@ Configuration files are :
 # /opt/bitnami/magento/app/etc/env.php
 ```
 
-
-
 ### Magento Erros logs
 
 If you get an error in magento, you can find corresponding log in
+
 ```
 /bitnami/magento/var/report/<error_id>
 ```
+
+If the error is like
+
+```
+{"0":"Unable to retrieve deployment version of static files from the file system."
+...
+```
+
+Generally a solution for that is to rebuild some commands:
+
+Connect to MagentoServiceAdmin Task, and execute the following commands in it
+
+```
+ecs_exec_service magento72 MagentoServiceAdmin magento
+root@ip-10-0-155-249:/# su daemon -s /bin/bash
+root@ip-10-0-155-249:/# cd /bitnami/magento
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento setup:upgrade
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento setup:upgrade
+root@ip-10-0-155-249:/# php -d memory_limit=-1 bin/magento cache:flush
+```
+
+You may also need to rebuild your cache with the crawler.
 
 ### Mysql
 

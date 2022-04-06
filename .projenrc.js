@@ -1,4 +1,4 @@
-const { awscdk } = require('projen');
+const {awscdk} = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',
@@ -8,7 +8,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   copyrightOwner: 'Amazon.com, Inc. or its affiliates. All Rights Reserved.',
   keywords: ['aws', 'constructs', 'cdk', 'ecs', 'magento'],
 
-  cdkVersion: '2.10.0',
+  cdkVersion: '2.15.0',
   defaultReleaseBranch: 'main',
   license: 'MIT-0',
   name: 'cdk-magento-fargate',
@@ -29,11 +29,14 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     useEFS: 'no', //CDK will use the created file system in the ECS Task
     useFSX: 'yes',
     ec2Cluster: 'yes',
+    ec2InstanceType: 'c5.9xlarge',
+    rdsInstanceType: 'r6g.8xlarge',
+    cacheInstanceType: 'r6g.8xlarge',
 
     //route53_domain_zone: 'ecs.demo3.allamand.com',
 
     magento_admin_task: 'yes',
-    magento_admin_task_debug: 'yes',
+    magento_admin_task_debug: 'no',
   },
 
   gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD'],

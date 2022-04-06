@@ -151,7 +151,7 @@ describe('Magento Stack with Admin, FSX, default VPC, ec2 Capacity Providers', (
             },
             {
               Name: 'PHP_MEMORY_LIMIT',
-              Value: '4G',
+              Value: '7G',
             },
           ],
         },

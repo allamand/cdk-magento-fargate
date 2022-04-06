@@ -1,10 +1,12 @@
 
 CDK_STACK_NAME?=magento
 
-stack:
-	echo $(CDK_STACK_NAME)
 diff: projen
 	npx cdk diff
+
+verif:
+	echo "You are going to deploy on CDK_STACK_NAME=$(CDK_STACK_NAME)"
+	sleep 5
 
 synth: projen
 	npx cdk synth	
@@ -12,8 +14,13 @@ synth: projen
 build:
 	npx projen build
 	
-deploy: projen
-	npx cdk deploy --require-approval=never
+deploy: verif projen
+	npx cdk deploy --require-approval=never 
+deploy-no-rollback : verif projen
+	npx cdk deploy --require-approval=never --no-rollback 
+
+test : projen
+	npx projen test
 
 destroy:
 	npx cdk destroy
