@@ -1467,7 +1467,7 @@ Object {
             ],
             "Essential": true,
             "Image": Object {
-              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:3a0afefd60da0ee34d12360cd87e55488f2b1f306ef40d23d9b8112607fce6dc",
+              "Fn::Sub": "1234567890.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-1234567890-us-east-1:9061e5a5a7277a892a21d1e136e25ec6c02e5cc00947377a7d69f38dd859eb3f",
             },
             "LogConfiguration": Object {
               "LogDriver": "awslogs",
