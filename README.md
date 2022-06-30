@@ -111,7 +111,6 @@ In the `.projenrc.js` configuration file, you can configure how the stack will b
 After updating the **context** section, you will need to run again `pj` in order to generate the appropriate cdk.json file from the Projen bootstrap structure.
 
 ```json
-...
   context: {
     //vpc_tag_name: 'ecsworkshop-base/BaseVPC', // TAG Name of the VPC to create the cluster into (or 'default' or remove to create new one)
     //enablePrivateLink: 'true',
@@ -139,8 +138,7 @@ After updating the **context** section, you will need to run again `pj` in order
     magento_user: 'user1',
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'no',
-  },
-  ...
+  }
 ```
 
 - **vpc_tag_name** : You can specify a tag name to use existing VPC, or ommit this parameter to create new VPC from CDK
@@ -207,13 +205,13 @@ If you want to deploy
 pj deploy
 ```
 
-The deploy action will apply the CDK generated CloudFormation template to your AWS Account. (Note, the services deployed here will incur costs in your account).
+The deploy action will apply the CDK generated-CloudFormation template to your AWS Account. (Note, the services deployed here will incur costs in your account).
 
-## Install magento demo content
+## Install Magento demo content
 
-We propose two ways to configure your magento website.
+We propose two ways to configure your Magento website.
 
-1. Using a build Pipelineallowing to configure the final magento website into a big Docker Image, and then uses this Image in the `docker/Dockerfile.noefs`
+1. Using a build Pipelineallowing to configure the final Magento website into a big Docker Image, and then uses this Image in the `docker/Dockerfile.noefs`
 2. Using the Admin task, allowing to connect to an empty magento website, and configure it in the running phase.
 
 ### Warm up page cache
@@ -222,7 +220,7 @@ Caching pages in solution like Magento is really mandatory for production worklo
 
 This process is fairly time-consuming, also if we take into account that the php code maybe stored on a shared file system like EFS or FsX Ontap.
 
-With the crawler, you can accelerate this process by letting magento know thants to a special header that the request is all about cache generation and it does not need toserved the page, only to cache it.
+With the crawler, you can accelerate this process by letting magento know thants to a special header that the request is all about cache generation and it does not need to serve the page, only to cache it.
 
 Additionaly, you can uses the crawler to refresh expired pages at regular intervals, so that the changes that a user will encounter an uncached page is significantly diminished, and makes your site faster.
 
@@ -231,12 +229,14 @@ Additionaly, you can uses the crawler to refresh expired pages at regular interv
 The crawler will needs to know what page your site offer, so we will generate a Sitemap using Magento2 built-in module:
 
 Magento 2 has a builtin module for generating a sitemap and it’s fast.
-Navigate to Magento Admin > Stores > Settings > Configuration > Catalog > XML Sitemap
-Set Generation Settings > Enabled to Yes
-Navigate to Magento Admin > Marketing > Seo & Search > Sitemap
-Click the Add Sitemap button.
-Set Filename = sitemap.xml and Path = /
-Click the Save & Generate button
+1. Navigate to Magento Admin > Stores > Settings > Configuration > Catalog > XML Sitemap
+   - Set Generation Settings > Enabled to Yes
+   - Save Config
+2. Navigate to Magento Admin > Marketing > Seo & Search > Sitemap
+   - Click the Add Sitemap button.
+   - Set Filename = sitemap.xml and Path = /
+   - Click the Save & Generate button
+
 A sitemap.xml file will be generated in your Magento 2 document root.
 
 #### Uses the LiteSpeed cache crawler script
@@ -244,7 +244,7 @@ A sitemap.xml file will be generated in your Magento 2 document root.
 Here we rely on LiteSpeed crawler script for Magento. You can [download](https://www.litespeedtech.com/packages/litemage2.0/M2-crawler.sh) it here and execute from the place of your choice:
 
 ```
-bash M2-crawler.sh https://www.example.com/sitemap.xml
+bash M2-crawler.sh https://www.example.com/pub/sitemap.xml
 ```
 
 ### Using a build Pipeline
@@ -275,6 +275,13 @@ $ ecs_exec_service magento MagentoService magento
 root@ip-10-0-145-190:/# curl -H "Host: $MAGENTO_HOST" localhost:8080
 
 ```
+
+## Enhancements
+
+In arder to absorb more requests on Magento, we will need to scale vertically RDS database, or Elasticache Instance.
+If we want to go more further, we should be able to uses RDS or Elasticache in cluster mode, but at this time the opensource Magento does not support that, maybe the commercial version does.
+
+- [Magento2 don't work with redis in cluster mode](https://github.com/magento/magento2/issues/35140#issuecomment-1053615007)
 
 ## TroubleShoot and debug
 

@@ -1,4 +1,4 @@
-const { awscdk } = require('projen');
+const {awscdk} = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',
@@ -8,7 +8,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   copyrightOwner: 'Amazon.com, Inc. or its affiliates. All Rights Reserved.',
   keywords: ['aws', 'constructs', 'cdk', 'ecs', 'magento'],
 
-  cdkVersion: '2.15.0',
+  cdkVersion: '2.20.0',
   defaultReleaseBranch: 'main',
   license: 'MIT-0',
   name: 'cdk-magento-fargate',
@@ -39,7 +39,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     magento_admin_task_debug: 'no',
   },
 
-  gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD'],
+  gitignore: ['cdk.out', 'cdk.context.json', '*.d.ts', '*.js', 'CMD', '.projenrc.js-*'],
 
   // cdkDependencies: undefined,  /* Which AWS CDK modules (those that start with "@aws-cdk/") this app uses. */
   // deps: [],                    /* Runtime dependencies of this module. */

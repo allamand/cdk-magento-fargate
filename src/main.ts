@@ -435,7 +435,7 @@ export class MagentoStack extends Stack {
     const cacheInstanceType = this.node.tryGetContext('cacheInstanceType') || 'r6g.large';
     const redis = new CfnCacheCluster(this, 'RedisCluster', {
       engine: 'redis',
-      cacheNodeType: 'cache.'+cacheInstanceType,
+      cacheNodeType: 'cache.' + cacheInstanceType,
       numCacheNodes: 1,
       clusterName: `${stackName}magento-elasticache`,
       vpcSecurityGroupIds: [elastiCacheSecurityGroup.securityGroupId],

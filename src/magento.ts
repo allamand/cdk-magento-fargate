@@ -468,7 +468,7 @@ export class MagentoService extends Construct {
       });
 
       const scalableTarget = this.service.autoScaleTaskCount({
-        minCapacity: 5,
+        minCapacity: 10,
         maxCapacity: 100,
       });
 

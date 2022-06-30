@@ -1,0 +1,1419 @@
+{
+  "widgets": [
+    {
+      "height": 6,
+      "width": 12,
+      "y": 0,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["ECS/ContainerInsights", "ContainerInstanceCount", "ClusterName", "magento90"],
+          [".", "TaskCount", ".", "."],
+          [".", "DesiredTaskCount", "ServiceName", "MagentoService", "ClusterName", "magento90"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "setPeriodToTimeRange": true,
+        "title": "magento90 Instances/Services/Tasks",
+        "period": 1,
+        "timezone": "UTC",
+        "stat": "Average"
+      }
+    },
+    {
+      "height": 5,
+      "width": 10,
+      "y": 83,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Memory Utilization",
+        "legend": {
+          "position": "right"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            {
+              "id": "expr1m0",
+              "label": "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+              "expression": "mm1m0 * 100 / mm0m0",
+              "stat": "Average"
+            }
+          ],
+          [
+            {
+              "id": "expr1m1",
+              "label": "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+              "expression": "mm1m1 * 100 / mm0m1",
+              "stat": "Average"
+            }
+          ],
+          [
+            "ECS/ContainerInsights",
+            "MemoryReserved",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"id": "mm0m0", "visible": false, "stat": "Sum"}
+          ],
+          [
+            "...",
+            "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+            {"id": "mm0m1", "visible": false, "stat": "Sum"}
+          ],
+          [
+            ".",
+            "MemoryUtilized",
+            ".",
+            ".",
+            ".",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"id": "mm1m0", "visible": false, "stat": "Sum"}
+          ],
+          [
+            "...",
+            "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+            {"id": "mm1m1", "visible": false, "stat": "Sum"}
+          ]
+        ],
+        "liveData": false,
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "showUnits": false,
+            "label": "Percent"
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 8,
+      "y": 71,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Network TX",
+        "legend": {
+          "position": "right"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            {
+              "id": "expr1m0",
+              "label": "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+              "expression": "mm0m0",
+              "stat": "Average"
+            }
+          ],
+          [
+            {
+              "id": "expr1m1",
+              "label": "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+              "expression": "mm0m1",
+              "stat": "Average"
+            }
+          ],
+          [
+            "ECS/ContainerInsights",
+            "NetworkTxBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"id": "mm0m0", "visible": false, "stat": "Average"}
+          ],
+          [
+            "...",
+            "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+            {"id": "mm0m1", "visible": false, "stat": "Average"}
+          ]
+        ],
+        "liveData": false,
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "showUnits": false,
+            "label": "Bytes/Second"
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 10,
+      "y": 77,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Network RX",
+        "legend": {
+          "position": "right"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            {
+              "id": "expr1m0",
+              "label": "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+              "expression": "mm0m0",
+              "stat": "Average"
+            }
+          ],
+          [
+            {
+              "id": "expr1m1",
+              "label": "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+              "expression": "mm0m1",
+              "stat": "Average"
+            }
+          ],
+          [
+            "ECS/ContainerInsights",
+            "NetworkRxBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"id": "mm0m0", "visible": false, "stat": "Average"}
+          ],
+          [
+            "...",
+            "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+            {"id": "mm0m1", "visible": false, "stat": "Average"}
+          ]
+        ],
+        "liveData": false,
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "showUnits": false,
+            "label": "Bytes/Second"
+          }
+        }
+      }
+    },
+    {
+      "height": 5,
+      "width": 8,
+      "y": 83,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Storage Read",
+        "legend": {
+          "position": "bottom"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            "ECS/ContainerInsights",
+            "StorageReadBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"stat": "Average"}
+          ],
+          ["...", "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90", {"stat": "Average"}]
+        ],
+        "liveData": false,
+        "period": 300
+      }
+    },
+    {
+      "height": 6,
+      "width": 8,
+      "y": 77,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Storage Write",
+        "legend": {
+          "position": "bottom"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            "ECS/ContainerInsights",
+            "StorageWriteBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"stat": "Average"}
+          ],
+          ["...", "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90", {"stat": "Average"}]
+        ],
+        "liveData": false,
+        "period": 300
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 37,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "period": 60,
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "UnHealthyHostCount",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "magentoService"}
+          ]
+        ],
+        "region": "eu-west-1",
+        "stat": "Average",
+        "title": "Unhealthy Hosts",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 43,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "period": 60,
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "HealthyHostCount",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "magen-Magen-BG78WDM908Q9"}
+          ]
+        ],
+        "region": "eu-west-1",
+        "stat": "Average",
+        "title": "Healthy Hosts",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 31,
+      "x": 18,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "HTTPCode_Target_5XX_Count",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "5XX"}
+          ],
+          [".", "HTTPCode_Target_4XX_Count", ".", ".", ".", ".", {"label": "4XX"}],
+          [".", "HTTPCode_Target_3XX_Count", ".", ".", ".", ".", {"label": "3XX"}]
+        ],
+        "period": 60,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "HTTP Codes",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 30,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "period": 60,
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "TargetConnectionErrorCount",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "magen-Magen-BG78WDM908Q9"}
+          ]
+        ],
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "Target connection errors",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 8,
+      "y": 71,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "period": 60,
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "TargetTLSNegotiationErrorCount",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "magen-Magen-BG78WDM908Q9"}
+          ]
+        ],
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "Target TLS Negotiation Errors",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 31,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "period": 60,
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "HTTPCode_Target_2XX_Count",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "2XX"}
+          ],
+          [".", "HTTPCode_Target_3XX_Count", ".", ".", ".", ".", {"label": "3XX"}],
+          [".", "HTTPCode_Target_4XX_Count", ".", ".", ".", ".", {"label": "4XX"}],
+          [".", "HTTPCode_Target_5XX_Count", ".", ".", ".", ".", {"label": "5XX"}]
+        ],
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "HTTP 2XXs",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 0,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "RequestCountPerTarget",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "RequestCountPerTarget"}
+          ],
+          [".", "RequestCount", ".", ".", ".", ".", {"label": "RequestCount"}]
+        ],
+        "period": 1,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "Request Count Per Target",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 24,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "TargetResponseTime",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "> 10 sec", "stat": "PR(10:)"}
+          ],
+          ["...", {"label": "> 5sec"}],
+          ["...", {"stat": "PR(1:)", "label": "> 1 sec"}]
+        ],
+        "period": 60,
+        "region": "eu-west-1",
+        "stat": "PR(5:)",
+        "title": "Target Response Time % above 10sec",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false,
+        "timezone": "UTC"
+      }
+    },
+    {
+      "height": 6,
+      "width": 7,
+      "y": 94,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Storage Write",
+        "legend": {
+          "position": "bottom"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            "ECS/ContainerInsights",
+            "StorageWriteBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceAdminTaskDefMagentoServiceAdmin9CFAAF90",
+            {"stat": "Average", "region": "eu-west-1"}
+          ],
+          [
+            "ECS/ContainerInsights",
+            "StorageWriteBytes",
+            "ClusterName",
+            "magento90",
+            "TaskDefinitionFamily",
+            "magento90MagentoServiceTaskDefMagentoServiceA87D06D5",
+            {"stat": "Average", "region": "eu-west-1"}
+          ]
+        ],
+        "liveData": false,
+        "period": 300
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 37,
+      "x": 18,
+      "type": "metric",
+      "properties": {
+        "region": "eu-west-1",
+        "title": "Number of Pending Tasks",
+        "legend": {
+          "position": "bottom"
+        },
+        "timezone": "Local",
+        "metrics": [
+          [
+            "ECS/ContainerInsights",
+            "PendingTaskCount",
+            "ClusterName",
+            "magento90",
+            "ServiceName",
+            "MagentoService",
+            {"stat": "Average"}
+          ]
+        ],
+        "start": "-P1DT0H0M0S",
+        "end": "P0D",
+        "liveData": false,
+        "period": 300,
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 7,
+      "width": 12,
+      "y": 36,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "title": "FsX Total throughput (bytes/sec)",
+        "period": 60,
+        "stacked": false,
+        "stat": "Sum",
+        "metrics": [
+          [
+            "AWS/FSx",
+            "DataReadBytes",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "m1", "label": "DataReadBytes", "visible": false}
+          ],
+          [".", "DataWriteBytes", ".", ".", {"id": "m2", "visible": false}],
+          [
+            {
+              "id": "e1",
+              "expression": "SUM(METRICS())/PERIOD(m1)",
+              "label": "Total throughput (bytes/sec)",
+              "region": "eu-west-1"
+            }
+          ]
+        ],
+        "region": "eu-west-1",
+        "start": "-PT3H",
+        "end": "P0D"
+      }
+    },
+    {
+      "height": 7,
+      "width": 12,
+      "y": 24,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"id": "e1", "expression": "1000 * m2/(m1+0.000001)", "label": "Write operations", "region": "eu-west-1"}],
+          [{"id": "e2", "expression": "1000 * m4/(m3+0.000001)", "label": "Read operations", "region": "eu-west-1"}],
+          [
+            {"id": "e3", "expression": "1000 * m6/(m5+0.000001)", "label": "Metadata operations", "region": "eu-west-1"}
+          ],
+          [
+            "AWS/FSx",
+            "DataWriteOperations",
+            "VolumeId",
+            "fsvol-0274ca05d0356f0e8",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "m1", "visible": false, "period": 1}
+          ],
+          [".", "DataWriteOperationTime", ".", ".", ".", ".", {"id": "m2", "visible": false, "period": 1}],
+          [".", "DataReadOperations", ".", ".", ".", ".", {"id": "m3", "visible": false, "period": 1}],
+          [".", "DataReadOperationTime", ".", ".", ".", ".", {"id": "m4", "visible": false, "period": 1}],
+          [".", "MetadataOperations", ".", ".", ".", ".", {"id": "m5", "visible": false}],
+          [".", "MetadataOperationTime", ".", ".", ".", ".", {"id": "m6", "visible": false}]
+        ],
+        "title": "FsX Average latency (ms/operation)",
+        "view": "timeSeries",
+        "period": 60,
+        "stacked": false,
+        "stat": "Sum",
+        "region": "eu-west-1"
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 43,
+      "x": 18,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/RDS",
+            "ConnectionAttempts",
+            "DBClusterIdentifier",
+            "magento90-magentoauroracluster576b8023-ie65ozs8d6c0"
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "period": 300,
+        "title": "RDS ConnectionAttempts"
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 88,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "magento90-magentoauroracluster576b8023-ie65ozs8d6c0"]
+        ],
+        "title": "RDS CPUUtilization"
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 88,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          [
+            "AWS/RDS",
+            "ResultSetCacheHitRatio",
+            "DBClusterIdentifier",
+            "magento90-magentoauroracluster576b8023-ie65ozs8d6c0"
+          ]
+        ],
+        "title": "RDS ResultSetCacheHitRatio"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 100,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/RDS", "ReadLatency", "DBClusterIdentifier", "magento90-magentoauroracluster576b8023-ie65ozs8d6c0"],
+          [".", "SelectLatency", ".", "."],
+          [".", "CommitLatency", ".", "."],
+          [".", "WriteLatency", ".", "."],
+          [".", "UpdateLatency", ".", "."],
+          [".", "DeleteLatency", ".", "."],
+          [".", "InsertLatency", ".", "."]
+        ],
+        "title": "RDS Latency"
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 88,
+      "x": 6,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          [
+            "AWS/RDS",
+            "DatabaseConnections",
+            "DBClusterIdentifier",
+            "magento90-magentoauroracluster576b8023-ie65ozs8d6c0"
+          ]
+        ],
+        "title": "RDS DatabaseConnections"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 6,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ECS",
+            "MemoryUtilization",
+            "ClusterName",
+            "magento90",
+            "ServiceName",
+            "MagentoService",
+            {"stat": "Average"}
+          ],
+          ["..."]
+        ],
+        "period": 1,
+        "stat": "Maximum",
+        "region": "eu-west-1",
+        "view": "timeSeries",
+        "stacked": false,
+        "title": "MemoryUtilization"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 12,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "TargetResponseTime",
+            "TargetGroup",
+            "targetgroup/magen-Magen-14KB17I9TU5N8/4eace4f40b781d96",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1",
+            {"label": "Average"}
+          ],
+          ["...", {"stat": "Maximum"}],
+          ["...", {"stat": "p99"}],
+          ["...", {"stat": "p95"}]
+        ],
+        "period": 1,
+        "region": "eu-west-1",
+        "stat": "Average",
+        "title": "Target Response Time",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 18,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/EC2", "MemoryUtilization", "AutoScalingGroupName", "magento90-Asg1ASG8A2F9427-14BDPN7DBF734"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "title": "EC2 CPU Utilization (Percent)",
+        "region": "eu-west-1",
+        "period": 1,
+        "stat": "Average"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 6,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ClusterName", "magento90", "ServiceName", "MagentoService"],
+          ["...", {"stat": "Maximum"}]
+        ],
+        "period": 1,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "view": "timeSeries",
+        "stacked": false,
+        "title": "CPUUtilization"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 12,
+      "x": 12,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/EC2",
+            "CPUUtilization",
+            "AutoScalingGroupName",
+            "magento90-Asg1ASG8A2F9427-14BDPN7DBF734",
+            {"region": "eu-west-1"}
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "title": "EC2 CPU Utilization (Percent)",
+        "region": "eu-west-1",
+        "period": 1,
+        "start": "-PT3H",
+        "end": "P0D",
+        "stat": "Average"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 100,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "NetworkPacketsPerSecondAllowanceExceeded",
+            "CacheClusterId",
+            "magento90magento-elasticache",
+            {"id": "m3"}
+          ],
+          [".", "NetworkLinkLocalAllowanceExceeded", ".", ".", {"id": "m4"}],
+          [".", "NetworkBandwidthOutAllowanceExceeded", ".", ".", {"id": "m5"}],
+          [".", "NetworkBandwidthInAllowanceExceeded", ".", ".", {"id": "m6"}],
+          [".", "NetworkConntrackAllowanceExceeded", ".", ".", {"id": "m7"}]
+        ],
+        "period": 1,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "Elasticache ",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 94,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ElastiCache", "CPUUtilization", "CacheClusterId", "magento90magento-elasticache"],
+          [".", "EngineCPUUtilization", ".", "."]
+        ],
+        "period": 1,
+        "region": "eu-west-1",
+        "stat": "Maximum",
+        "title": "Elasticache CPU Max",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 6,
+      "y": 94,
+      "x": 6,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ElastiCache",
+            "CacheHitRate",
+            "CacheClusterId",
+            "magento90magento-elasticache",
+            "CacheNodeId",
+            "0001",
+            {"yAxis": "left"}
+          ],
+          [".", "CacheMisses", ".", ".", ".", ".", {"yAxis": "right"}]
+        ],
+        "period": 1,
+        "region": "eu-west-1",
+        "stat": "Maximum",
+        "title": "Elasticache Cache Hit Rate",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 43,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "title": "FsX IOPS totales (opérations/s)",
+        "view": "timeSeries",
+        "period": 60,
+        "stacked": false,
+        "stat": "Sum",
+        "metrics": [
+          [
+            "AWS/FSx",
+            "DataReadOperations",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "m1", "label": "DataReadOperations", "visible": false}
+          ],
+          [".", "DataWriteOperations", ".", ".", {"id": "m2", "visible": false}],
+          [".", "MetadataOperations", ".", ".", {"id": "m3", "visible": false}],
+          [
+            {
+              "id": "e1",
+              "expression": "SUM(METRICS())/PERIOD(m1)",
+              "label": "IOPS totales (opérations/s)",
+              "region": "eu-west-1"
+            }
+          ]
+        ],
+        "region": "eu-west-1"
+      }
+    },
+    {
+      "height": 6,
+      "width": 12,
+      "y": 18,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/ApplicationELB",
+            "HTTPCode_ELB_5XX_Count",
+            "LoadBalancer",
+            "app/ecs-magento90MagentoService/f2c439c788d8eee1"
+          ],
+          [".", "TargetConnectionErrorCount", ".", "."]
+        ],
+        "period": 60,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "title": "ALB Errors",
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "start": "-PT3H",
+        "end": "P0D",
+        "view": "timeSeries",
+        "stacked": false
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 49,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m1/1048576)/PERIOD(m1)", "label": "Expression1", "id": "e1", "visible": false}],
+          [{"expression": "m2/1048576", "label": "Expression2", "id": "e2", "visible": false}],
+          [{"expression": "e2-e1", "label": "Expression3", "id": "e3", "visible": false}],
+          [{"expression": "((e1)*100)/(e2)", "label": "Throughput utilization (%)", "id": "e4"}],
+          [
+            "AWS/EFS",
+            "MeteredIOBytes",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "m1", "period": 60, "visible": false}
+          ],
+          [".", "PermittedThroughput", ".", ".", {"id": "m2", "period": 60, "visible": false}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Throughput utilization (%)",
+        "annotations": {
+          "horizontal": [
+            {
+              "visible": true,
+              "color": "#d13212",
+              "label": "Utilization warning",
+              "value": 75,
+              "fill": "above",
+              "yAxis": "left"
+            }
+          ]
+        },
+        "yAxis": {
+          "left": {
+            "max": 100
+          }
+        }
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 49,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m2*100)/m1", "label": "Data write", "id": "e2"}],
+          [{"expression": "(m3*100)/m1", "label": "Data read", "id": "e3"}],
+          [{"expression": "(m4*100)/m1", "label": "Metadata", "id": "e4"}],
+          ["AWS/EFS", "TotalIOBytes", "FileSystemId", "fs-026e50e2c10f19863", {"id": "m1", "visible": false}],
+          [".", "DataWriteIOBytes", ".", ".", {"id": "m2", "visible": false}],
+          [".", "DataReadIOBytes", ".", ".", {"id": "m3", "visible": false}],
+          [".", "MetadataIOBytes", ".", ".", {"id": "m4", "visible": false}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "SampleCount",
+        "period": 60,
+        "title": "EFS IOPS by type"
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 49,
+      "x": 16,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m2*100)/m1", "label": "Data write", "id": "e2"}],
+          [{"expression": "(m3*100)/m1", "label": "Data read", "id": "e3"}],
+          [{"expression": "(m4*100)/m1", "label": "Metadata", "id": "e4"}],
+          ["AWS/EFS", "TotalIOBytes", "FileSystemId", "fs-026e50e2c10f19863", {"id": "m1", "visible": false}],
+          [".", "DataWriteIOBytes", ".", ".", {"id": "m2", "visible": false}],
+          [".", "DataReadIOBytes", ".", ".", {"id": "m3", "visible": false}],
+          [".", "MetadataIOBytes", ".", ".", {"id": "m4", "visible": false}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Throughput by type"
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 57,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/EFS", "PercentIOLimit", "FileSystemId", "fs-026e50e2c10f19863", {"label": "fs-026e50e2c10f19863"}]
+        ],
+        "region": "eu-west-1",
+        "title": "EFS Percent IO limit",
+        "period": 300
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 57,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/EFS", "ClientConnections", "FileSystemId", "fs-026e50e2c10f19863", {"label": "fs-026e50e2c10f19863"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Client connections"
+      }
+    },
+    {
+      "height": 8,
+      "width": 8,
+      "y": 57,
+      "x": 16,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "Total",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mTotal", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mTotal > 1000, IF(mTotal > 1000000, IF(mTotal > 1000000000, IF(mTotal > 1000000000000, IF(mTotal > 1000000000000000, 1, mTotal*0.9094947), mTotal*0.9313226), mTotal*0.9536743), mTotal*0.9765625), mTotal)",
+              "label": "Total"
+            }
+          ],
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "Standard",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mStandard", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mStandard > 1000, IF(mStandard > 1000000, IF(mStandard > 1000000000, IF(mStandard > 1000000000000, IF(mStandard > 1000000000000000, 1, mStandard*0.9094947), mStandard*0.9313226), mStandard*0.9536743), mStandard*0.9765625), mStandard)",
+              "label": "Standard"
+            }
+          ],
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "IA",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mIA", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mIA > 1000, IF(mIA > 1000000, IF(mIA > 1000000000, IF(mIA > 1000000000000, IF(mIA > 1000000000000000, 1, mIA*0.9094947), mIA*0.9313226), mIA*0.9536743), mIA*0.9765625), mIA)",
+              "label": "Standard-IA"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "eu-west-1",
+        "title": "EFS Storage bytes"
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 65,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m1/1048576)/PERIOD(m1)", "label": "Expression1", "id": "e1", "visible": false}],
+          [{"expression": "m2/1048576", "label": "Expression2", "id": "e2", "visible": false}],
+          [{"expression": "e2-e1", "label": "Expression3", "id": "e3", "visible": false}],
+          [{"expression": "((e1)*100)/(e2)", "label": "Throughput utilization (%)", "id": "e4"}],
+          [
+            "AWS/EFS",
+            "MeteredIOBytes",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "m1", "period": 60, "visible": false}
+          ],
+          [".", "PermittedThroughput", ".", ".", {"id": "m2", "period": 60, "visible": false}]
+        ],
+        "view": "singleValue",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Throughput utilization (%)",
+        "annotations": {
+          "horizontal": [
+            {
+              "visible": true,
+              "color": "#d13212",
+              "label": "Utilization warning",
+              "value": 75,
+              "fill": "above",
+              "yAxis": "left"
+            }
+          ]
+        },
+        "yAxis": {
+          "left": {
+            "max": 100
+          }
+        }
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 65,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m2*100)/m1", "label": "Data write", "id": "e2"}],
+          [{"expression": "(m3*100)/m1", "label": "Data read", "id": "e3"}],
+          [{"expression": "(m4*100)/m1", "label": "Metadata", "id": "e4"}],
+          ["AWS/EFS", "TotalIOBytes", "FileSystemId", "fs-026e50e2c10f19863", {"id": "m1", "visible": false}],
+          [".", "DataWriteIOBytes", ".", ".", {"id": "m2", "visible": false}],
+          [".", "DataReadIOBytes", ".", ".", {"id": "m3", "visible": false}],
+          [".", "MetadataIOBytes", ".", ".", {"id": "m4", "visible": false}]
+        ],
+        "view": "singleValue",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "SampleCount",
+        "period": 60,
+        "title": "EFS IOPS by type"
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 65,
+      "x": 16,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [{"expression": "(m2*100)/m1", "label": "Data write", "id": "e2"}],
+          [{"expression": "(m3*100)/m1", "label": "Data read", "id": "e3"}],
+          [{"expression": "(m4*100)/m1", "label": "Metadata", "id": "e4"}],
+          ["AWS/EFS", "TotalIOBytes", "FileSystemId", "fs-026e50e2c10f19863", {"id": "m1", "visible": false}],
+          [".", "DataWriteIOBytes", ".", ".", {"id": "m2", "visible": false}],
+          [".", "DataReadIOBytes", ".", ".", {"id": "m3", "visible": false}],
+          [".", "MetadataIOBytes", ".", ".", {"id": "m4", "visible": false}]
+        ],
+        "view": "singleValue",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Throughput by type"
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 68,
+      "x": 0,
+      "type": "metric",
+      "properties": {
+        "view": "singleValue",
+        "stacked": false,
+        "metrics": [
+          ["AWS/EFS", "PercentIOLimit", "FileSystemId", "fs-026e50e2c10f19863", {"label": "fs-026e50e2c10f19863"}]
+        ],
+        "region": "eu-west-1",
+        "title": "EFS Percent IO limit"
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 68,
+      "x": 8,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/EFS", "ClientConnections", "FileSystemId", "fs-026e50e2c10f19863", {"label": "fs-026e50e2c10f19863"}]
+        ],
+        "view": "singleValue",
+        "stacked": false,
+        "region": "eu-west-1",
+        "stat": "Sum",
+        "period": 60,
+        "title": "EFS Client connections"
+      }
+    },
+    {
+      "height": 3,
+      "width": 8,
+      "y": 68,
+      "x": 16,
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "Total",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mTotal", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mTotal > 1000, IF(mTotal > 1000000, IF(mTotal > 1000000000, IF(mTotal > 1000000000000, IF(mTotal > 1000000000000000, 1, mTotal*0.9094947), mTotal*0.9313226), mTotal*0.9536743), mTotal*0.9765625), mTotal)",
+              "label": "Total"
+            }
+          ],
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "Standard",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mStandard", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mStandard > 1000, IF(mStandard > 1000000, IF(mStandard > 1000000000, IF(mStandard > 1000000000000, IF(mStandard > 1000000000000000, 1, mStandard*0.9094947), mStandard*0.9313226), mStandard*0.9536743), mStandard*0.9765625), mStandard)",
+              "label": "Standard"
+            }
+          ],
+          [
+            "AWS/EFS",
+            "StorageBytes",
+            "StorageClass",
+            "IA",
+            "FileSystemId",
+            "fs-026e50e2c10f19863",
+            {"id": "mIA", "visible": false}
+          ],
+          [
+            {
+              "expression": "IF(mIA > 1000, IF(mIA > 1000000, IF(mIA > 1000000000, IF(mIA > 1000000000000, IF(mIA > 1000000000000000, 1, mIA*0.9094947), mIA*0.9313226), mIA*0.9536743), mIA*0.9765625), mIA)",
+              "label": "Standard-IA"
+            }
+          ]
+        ],
+        "view": "singleValue",
+        "stacked": false,
+        "region": "eu-west-1",
+        "title": "EFS Storage bytes"
+      }
+    }
+  ]
+}
