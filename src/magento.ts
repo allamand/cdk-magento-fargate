@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/member-ordering */
 
-import { CfnOutput, Duration, Stack, Tags } from 'aws-cdk-lib';
-import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
-import { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2';
+import {Aspects, CfnOutput, Duration, IAspect, Stack, Tags} from 'aws-cdk-lib';
+import {Certificate} from 'aws-cdk-lib/aws-certificatemanager';
+import {ISecurityGroup, IVpc} from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import {
   AssetImage,
@@ -17,19 +17,19 @@ import {
   ICluster,
   NetworkMode,
 } from 'aws-cdk-lib/aws-ecs';
-import { AccessPoint, FileSystem } from 'aws-cdk-lib/aws-efs';
-import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Key } from 'aws-cdk-lib/aws-kms';
-import { LogGroup } from 'aws-cdk-lib/aws-logs';
-import { IDomain } from 'aws-cdk-lib/aws-opensearchservice';
-import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
-import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
-import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
-import { Bucket } from 'aws-cdk-lib/aws-s3';
+import {AccessPoint, FileSystem} from 'aws-cdk-lib/aws-efs';
+import {ApplicationLoadBalancer} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import {Effect, PolicyStatement} from 'aws-cdk-lib/aws-iam';
+import {Key} from 'aws-cdk-lib/aws-kms';
+import {LogGroup} from 'aws-cdk-lib/aws-logs';
+import {IDomain} from 'aws-cdk-lib/aws-opensearchservice';
+import {IDatabaseCluster} from 'aws-cdk-lib/aws-rds';
+import {ARecord, HostedZone, RecordTarget} from 'aws-cdk-lib/aws-route53';
+import {LoadBalancerTarget} from 'aws-cdk-lib/aws-route53-targets';
+import {Bucket} from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
-import { Construct } from 'constructs';
+import {StringParameter} from 'aws-cdk-lib/aws-ssm';
+import {Construct, IConstruct} from 'constructs';
 
 /**
  * construct properties for EksUtils
@@ -192,6 +192,9 @@ export class MagentoService extends Construct {
      */
     // Lookup pre-existing TLS certificate for our magento service:
     const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
+    if (!r53DomainZone) {
+      throw 'r53DomainZone is mandatory, you need to provide valid route53 domain';
+    }
 
     /**
      * create ALB
@@ -219,11 +222,11 @@ export class MagentoService extends Construct {
         parameterName: 'CertificateArn-' + r53DomainZone,
       }).stringValue;
       certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
-      domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
+      domainZone = HostedZone.fromLookup(this, 'Zone', {domainName: r53DomainZone});
       this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
       if (!props.magentoAdminTask) {
-        listener = this!.alb.addListener(id + 'Listener', { port: 443 });
+        listener = this!.alb.addListener(id + 'Listener', {port: 443});
 
         listener.addCertificates(id + 'cert', [certificate]);
         new ARecord(this, id + 'AliasRecord', {
@@ -231,21 +234,24 @@ export class MagentoService extends Construct {
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
           target: RecordTarget.fromAlias(new LoadBalancerTarget(this!.alb)),
         });
-        new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
+        new CfnOutput(this, id + 'URL', {value: 'https://' + this.hostName});
       }
     } else {
       //if no route53 we will run in http mode on default LB domain name
       if (!props.magentoAdminTask) {
-        listener = this!.alb.addListener(id + 'Listener', { port: 80 });
+        listener = this!.alb.addListener(id + 'Listener', {port: 80});
         this.hostName = this!.alb.loadBalancerDnsName;
-        new CfnOutput(this, id + 'URL', { value: 'http://' + this.hostName });
+        new CfnOutput(this, id + 'URL', {value: 'http://' + this.hostName});
       } else {
         this.alb = props.mainStackALB!;
         this.hostName = this!.alb.loadBalancerDnsName;
       }
     }
 
-    //TODO: Which combination is the best for Magento ?
+    const taskCpu = this.node.tryGetContext('taskCpu') || 2048;
+    const taskMem = this.node.tryGetContext('taskMem') || 8192;
+    const phpMemoryLimit = this.node.tryGetContext('phpMemoryLimit') || '7G';
+
     let taskDefinition: Ec2TaskDefinition | FargateTaskDefinition;
     if (props.ec2Cluster) {
       taskDefinition = new Ec2TaskDefinition(this, 'TaskDef' + id, {
@@ -254,8 +260,8 @@ export class MagentoService extends Construct {
     } else {
       //Need to respect valid cpu/memory Fargate options: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html
       taskDefinition = new FargateTaskDefinition(this, 'TaskDef' + id, {
-        cpu: 2048,
-        memoryLimitMiB: 8192,
+        cpu: taskCpu,
+        memoryLimitMiB: taskMem,
       });
     }
     if (props.useFSX) {
@@ -308,7 +314,7 @@ export class MagentoService extends Construct {
       MAGENTO_ELASTICSEARCH_ENABLE_AUTH: 'yes',
       MAGENTO_ELASTICSEARCH_USER: props.osUser,
 
-      PHP_MEMORY_LIMIT: '7G',
+      PHP_MEMORY_LIMIT: phpMemoryLimit,
     };
     const magentoMarketplaceSecrets = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -337,8 +343,8 @@ export class MagentoService extends Construct {
       environment: magentoEnvs,
       secrets: magentoSecrets,
       user: 'daemon',
-      cpu: 2048,
-      memoryLimitMiB: 8192,
+      cpu: taskCpu,
+      memoryLimitMiB: taskMem,
     };
     const container = taskDefinition.addContainer('magento', containerDef);
 
@@ -420,6 +426,27 @@ export class MagentoService extends Construct {
         healthCheckGracePeriod: !props.magentoAdminTask ? Duration.minutes(2) : undefined, // CreateService error: Health check grace period is only valid for services configured to use load balancers
       });
 
+      /**
+       * Bug: can't delete Capacity provider
+       * https://github.com/aws/aws-cdk/issues/19275
+       * Add a dependency from capacity provider association to the cluster
+       * and from each service to the capacity provider association.
+       */
+      class CapacityProviderDependencyAspect implements IAspect {
+        public visit(node: IConstruct): void {
+          if (node instanceof ecs.Ec2Service) {
+            const children = node.cluster.node.findAll();
+            for (const child of children) {
+              if (child instanceof ecs.CfnClusterCapacityProviderAssociations) {
+                child.node.addDependency(node.cluster);
+                node.node.addDependency(child);
+              }
+            }
+          }
+        }
+      }
+      Aspects.of(this).add(new CapacityProviderDependencyAspect());
+
       // Specify binpack by memory and spread across availability zone as placement strategies.
       // To place randomly, call: service.placeRandomly()
       if (!props.magentoAdminTask) {
@@ -467,20 +494,25 @@ export class MagentoService extends Construct {
         deregistrationDelay: Duration.minutes(5),
       });
 
+      const magentoMinTasks = this.node.tryGetContext('magentoMinTasks') || 1;
+      const magentoMaxTasks = this.node.tryGetContext('magentoMinTasks') || 30;
+      const targetCpuScaling = this.node.tryGetContext('targetCpuScaling') || 60;
+      const targetMemScaling = this.node.tryGetContext('targetMemScaling') || 60;      
+
       const scalableTarget = this.service.autoScaleTaskCount({
-        minCapacity: 10,
-        maxCapacity: 100,
+        minCapacity: magentoMinTasks,
+        maxCapacity: magentoMaxTasks,
       });
 
       scalableTarget.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: 50,
+        targetUtilizationPercent: targetCpuScaling,
         scaleOutCooldown: Duration.seconds(10),
         scaleInCooldown: Duration.seconds(10),
         disableScaleIn: false,
       });
 
       scalableTarget.scaleOnMemoryUtilization('MemoryScaling', {
-        targetUtilizationPercent: 50,
+        targetUtilizationPercent: targetMemScaling,
         scaleOutCooldown: Duration.seconds(10),
         scaleInCooldown: Duration.seconds(10),
         disableScaleIn: false,
@@ -508,6 +540,6 @@ export class MagentoService extends Construct {
       // });
     }
 
-    new CfnOutput(this, 'magentoURL', { value: 'https://' + this!.hostName });
+    new CfnOutput(this, 'magentoURL', {value: 'https://' + this!.hostName});
   }
 }
