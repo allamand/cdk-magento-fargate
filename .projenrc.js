@@ -42,7 +42,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     magentoMinTasks: 10,
     magentoMaxTasks: 100,
 
-    route53_domain_zone: 'sallaman.people.aws.dev',
+    //route53_domain_zone: 'sallaman.people.aws.dev',
 
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'no',
