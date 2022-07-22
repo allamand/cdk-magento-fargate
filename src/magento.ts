@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/member-ordering */
 
-import {Aspects, CfnOutput, Duration, IAspect, Stack, Tags} from 'aws-cdk-lib';
-import {Certificate} from 'aws-cdk-lib/aws-certificatemanager';
-import {ISecurityGroup, IVpc} from 'aws-cdk-lib/aws-ec2';
+import { Aspects, CfnOutput, Duration, IAspect, Stack, Tags } from 'aws-cdk-lib';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import {
   AssetImage,
@@ -17,19 +17,19 @@ import {
   ICluster,
   NetworkMode,
 } from 'aws-cdk-lib/aws-ecs';
-import {AccessPoint, FileSystem} from 'aws-cdk-lib/aws-efs';
-import {ApplicationLoadBalancer} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import {Effect, PolicyStatement} from 'aws-cdk-lib/aws-iam';
-import {Key} from 'aws-cdk-lib/aws-kms';
-import {LogGroup} from 'aws-cdk-lib/aws-logs';
-import {IDomain} from 'aws-cdk-lib/aws-opensearchservice';
-import {IDatabaseCluster} from 'aws-cdk-lib/aws-rds';
-import {ARecord, HostedZone, RecordTarget} from 'aws-cdk-lib/aws-route53';
-import {LoadBalancerTarget} from 'aws-cdk-lib/aws-route53-targets';
-import {Bucket} from 'aws-cdk-lib/aws-s3';
+import { AccessPoint, FileSystem } from 'aws-cdk-lib/aws-efs';
+import { ApplicationLoadBalancer } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Key } from 'aws-cdk-lib/aws-kms';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
+import { IDomain } from 'aws-cdk-lib/aws-opensearchservice';
+import { IDatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import {StringParameter} from 'aws-cdk-lib/aws-ssm';
-import {Construct, IConstruct} from 'constructs';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Construct, IConstruct } from 'constructs';
 
 /**
  * construct properties for EksUtils
@@ -222,11 +222,11 @@ export class MagentoService extends Construct {
         parameterName: 'CertificateArn-' + r53DomainZone,
       }).stringValue;
       certificate = Certificate.fromCertificateArn(this, 'ecsCert', certificateArn);
-      domainZone = HostedZone.fromLookup(this, 'Zone', {domainName: r53DomainZone});
+      domainZone = HostedZone.fromLookup(this, 'Zone', { domainName: r53DomainZone });
       this.hostName = r53MagentoPrefix + '.' + r53DomainZone;
 
       if (!props.magentoAdminTask) {
-        listener = this!.alb.addListener(id + 'Listener', {port: 443});
+        listener = this!.alb.addListener(id + 'Listener', { port: 443 });
 
         listener.addCertificates(id + 'cert', [certificate]);
         new ARecord(this, id + 'AliasRecord', {
@@ -234,14 +234,14 @@ export class MagentoService extends Construct {
           recordName: r53MagentoPrefix + '.' + r53DomainZone,
           target: RecordTarget.fromAlias(new LoadBalancerTarget(this!.alb)),
         });
-        new CfnOutput(this, id + 'URL', {value: 'https://' + this.hostName});
+        new CfnOutput(this, id + 'URL', { value: 'https://' + this.hostName });
       }
     } else {
       //if no route53 we will run in http mode on default LB domain name
       if (!props.magentoAdminTask) {
-        listener = this!.alb.addListener(id + 'Listener', {port: 80});
+        listener = this!.alb.addListener(id + 'Listener', { port: 80 });
         this.hostName = this!.alb.loadBalancerDnsName;
-        new CfnOutput(this, id + 'URL', {value: 'http://' + this.hostName});
+        new CfnOutput(this, id + 'URL', { value: 'http://' + this.hostName });
       } else {
         this.alb = props.mainStackALB!;
         this.hostName = this!.alb.loadBalancerDnsName;
@@ -497,7 +497,7 @@ export class MagentoService extends Construct {
       const magentoMinTasks = this.node.tryGetContext('magentoMinTasks') || 1;
       const magentoMaxTasks = this.node.tryGetContext('magentoMinTasks') || 30;
       const targetCpuScaling = this.node.tryGetContext('targetCpuScaling') || 60;
-      const targetMemScaling = this.node.tryGetContext('targetMemScaling') || 60;      
+      const targetMemScaling = this.node.tryGetContext('targetMemScaling') || 60;
 
       const scalableTarget = this.service.autoScaleTaskCount({
         minCapacity: magentoMinTasks,
@@ -540,6 +540,6 @@ export class MagentoService extends Construct {
       // });
     }
 
-    new CfnOutput(this, 'magentoURL', {value: 'https://' + this!.hostName});
+    new CfnOutput(this, 'magentoURL', { value: 'https://' + this!.hostName });
   }
 }

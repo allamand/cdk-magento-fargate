@@ -1,4 +1,4 @@
-import {aws_fsx as fsx, CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags} from 'aws-cdk-lib';
+import { aws_fsx as fsx, CfnOutput, RemovalPolicy, Size, Stack, StackProps, Tags } from 'aws-cdk-lib';
 import {
   AutoScalingGroup,
   BlockDevice,
@@ -25,19 +25,19 @@ import {
   EcsOptimizedImage,
   ExecuteCommandLogging,
 } from 'aws-cdk-lib/aws-ecs';
-import {AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode} from 'aws-cdk-lib/aws-efs';
-import {CfnCacheCluster, CfnSubnetGroup} from 'aws-cdk-lib/aws-elasticache';
-import {ManagedPolicy, Role, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
-import {Key} from 'aws-cdk-lib/aws-kms';
-import {LogGroup} from 'aws-cdk-lib/aws-logs';
+import { AccessPoint, FileSystem, LifecyclePolicy, PerformanceMode, ThroughputMode } from 'aws-cdk-lib/aws-efs';
+import { CfnCacheCluster, CfnSubnetGroup } from 'aws-cdk-lib/aws-elasticache';
+import { ManagedPolicy, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { Key } from 'aws-cdk-lib/aws-kms';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
-import {AuroraMysqlEngineVersion, Credentials, DatabaseCluster, DatabaseClusterEngine} from 'aws-cdk-lib/aws-rds';
-import {Bucket} from 'aws-cdk-lib/aws-s3';
+import { AuroraMysqlEngineVersion, Credentials, DatabaseCluster, DatabaseClusterEngine } from 'aws-cdk-lib/aws-rds';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cfninc from 'aws-cdk-lib/cloudformation-include';
 import * as cxapi from 'aws-cdk-lib/cx-api';
-import {Construct} from 'constructs';
-import {MagentoService} from './magento';
+import { Construct } from 'constructs';
+import { MagentoService } from './magento';
 
 //https://www.npmjs.com/package/@aws-cdk-containers/ecs-service-extensions?activeTab=readme
 export interface MagentoStackProps extends StackProps {
@@ -65,14 +65,14 @@ export class MagentoStack extends Stack {
     const vpcTagName = this.node.tryGetContext('vpc_tag_name') || undefined;
     if (vpcTagName) {
       if (vpcTagName == 'default') {
-        vpc = Vpc.fromLookup(this, 'VPC', {isDefault: true});
+        vpc = Vpc.fromLookup(this, 'VPC', { isDefault: true });
       } else {
-        vpc = Vpc.fromLookup(this, 'VPC', {tags: {Name: vpcTagName}});
+        vpc = Vpc.fromLookup(this, 'VPC', { tags: { Name: vpcTagName } });
       }
     } else {
-      vpc = new Vpc(this, 'VPC', {maxAzs: 2});
+      vpc = new Vpc(this, 'VPC', { maxAzs: 2 });
     }
-    const privateSubnetIds = vpc.selectSubnets({subnetType: SubnetType.PRIVATE_WITH_NAT}).subnetIds;
+    const privateSubnetIds = vpc.selectSubnets({ subnetType: SubnetType.PRIVATE_WITH_NAT }).subnetIds;
 
     let privateRouteTablesIds: string[] = [];
     vpc.privateSubnets.forEach((subnet) => {
@@ -83,9 +83,9 @@ export class MagentoStack extends Stack {
 
     const enablePrivateLink = this.node.tryGetContext('enablePrivateLink');
     if (enablePrivateLink == 'true') {
-      vpc.addInterfaceEndpoint('CWEndpoint', {service: InterfaceVpcEndpointAwsService.CLOUDWATCH});
-      vpc.addInterfaceEndpoint('EFSEndpoint', {service: InterfaceVpcEndpointAwsService.ELASTIC_FILESYSTEM});
-      vpc.addInterfaceEndpoint('SMEndpoint', {service: InterfaceVpcEndpointAwsService.SECRETS_MANAGER});
+      vpc.addInterfaceEndpoint('CWEndpoint', { service: InterfaceVpcEndpointAwsService.CLOUDWATCH });
+      vpc.addInterfaceEndpoint('EFSEndpoint', { service: InterfaceVpcEndpointAwsService.ELASTIC_FILESYSTEM });
+      vpc.addInterfaceEndpoint('SMEndpoint', { service: InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
     }
 
     // Create kms key for secure logging and secret store encryption
@@ -93,7 +93,7 @@ export class MagentoStack extends Stack {
     const kmsKey = new Key(this, 'ECSKmsKey', {
       alias: id + '-kms-ecs-' + props.clusterName,
     });
-    new CfnOutput(stack, 'EcsKMSAlias', {value: kmsKey.keyArn});
+    new CfnOutput(stack, 'EcsKMSAlias', { value: kmsKey.keyArn });
 
     // Secure ecs exec loggings
     const execLogGroup = new LogGroup(this, 'ECSExecLogGroup', {
@@ -101,13 +101,13 @@ export class MagentoStack extends Stack {
       logGroupName: '/ecs/secu/exec/' + props.clusterName,
       encryptionKey: kmsKey,
     });
-    new CfnOutput(stack, 'EcsExecLogGroupOut', {value: execLogGroup.logGroupName});
+    new CfnOutput(stack, 'EcsExecLogGroupOut', { value: execLogGroup.logGroupName });
     const execBucket = new Bucket(this, 'EcsExecBucket', {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       encryptionKey: kmsKey,
     });
-    new CfnOutput(stack, 'EcsExecBucketOut', {value: execBucket.bucketName});
+    new CfnOutput(stack, 'EcsExecBucketOut', { value: execBucket.bucketName });
 
     /**
      * Password Creations
@@ -123,7 +123,7 @@ export class MagentoStack extends Stack {
         excludePunctuation: true,
       },
     });
-    new CfnOutput(stack, 'MagentoAdminPasswordOutput', {value: magentoPassword.toString()});
+    new CfnOutput(stack, 'MagentoAdminPasswordOutput', { value: magentoPassword.toString() });
 
     /* The master user password must
      * contain at least one uppercase letter, one lowercase letter, one number, and one special character.
@@ -152,7 +152,7 @@ export class MagentoStack extends Stack {
         excludePunctuation: true,
       },
     });
-    new CfnOutput(stack, 'MagentoDatabasePasswordOutput', {value: magentoDatabasePassword.toString()});
+    new CfnOutput(stack, 'MagentoDatabasePasswordOutput', { value: magentoDatabasePassword.toString() });
 
     var ec2Cluster: boolean = false; // By default I uses Fargate Cluster
     const contextEc2Cluster = this.node.tryGetContext('ec2Cluster');
@@ -282,7 +282,7 @@ export class MagentoStack extends Stack {
       const mountPath = '/mnt/fsx';
       const mountName = '/datavol';
 
-      new CfnOutput(this, 'FsXDnsName', {value: dnsName});
+      new CfnOutput(this, 'FsXDnsName', { value: dnsName });
 
       asg1.userData.addCommands(
         //'sudo su',
@@ -342,12 +342,12 @@ export class MagentoStack extends Stack {
         cluster.addAsgCapacityProvider(cp1!);
       }
     }
-    new CfnOutput(this, 'ClusterName', {value: cluster.clusterName});
+    new CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
 
     /*
      ** Configure Flows security group in VPC
      */
-    const efsFileSystemSecurityGroup = new SecurityGroup(this, 'EfsFileSystemSecurityGroup', {vpc});
+    const efsFileSystemSecurityGroup = new SecurityGroup(this, 'EfsFileSystemSecurityGroup', { vpc });
 
     //NFS security group which used for ec2 to copy file
     //TODO: maybe thoses lines are not used anyzhere
@@ -409,7 +409,7 @@ export class MagentoStack extends Stack {
     const secret = magentoDatabasePassword.secretValue;
     const rdsInstanceType = this.node.tryGetContext('rdsInstanceType') || 'r6g.large';
     const db = new DatabaseCluster(this, 'MagentoAuroraCluster', {
-      engine: DatabaseClusterEngine.auroraMysql({version: AuroraMysqlEngineVersion.VER_2_10_1}),
+      engine: DatabaseClusterEngine.auroraMysql({ version: AuroraMysqlEngineVersion.VER_2_10_1 }),
       credentials: Credentials.fromPassword(DB_USER, secret),
       removalPolicy: RemovalPolicy.DESTROY,
       instances: 1,
@@ -510,9 +510,9 @@ export class MagentoStack extends Stack {
         enableVersionUpgrade: true,
       });
     }
-    new CfnOutput(this, 'EsDomainEndpoint', {value: osDomain.domainEndpoint});
-    new CfnOutput(this, 'EsDomainName', {value: osDomain.domainName});
-    new CfnOutput(this, 'EsMasterUserPassword', {value: magentoOpensearchAdminPassword.secretValue.toString()});
+    new CfnOutput(this, 'EsDomainEndpoint', { value: osDomain.domainEndpoint });
+    new CfnOutput(this, 'EsDomainName', { value: osDomain.domainName });
+    new CfnOutput(this, 'EsMasterUserPassword', { value: magentoOpensearchAdminPassword.secretValue.toString() });
     process.env.elasticsearch_host = osDomain.domainEndpoint;
 
     var useFSX: boolean = false; // By default I don't want EFS, it's too slow
@@ -577,9 +577,9 @@ export class MagentoStack extends Stack {
      */
     var magentoImage: AssetImage;
     if (useEFS || useFSX) {
-      magentoImage = ContainerImage.fromAsset('./docker/', {file: 'Dockerfile'});
+      magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile' });
     } else {
-      magentoImage = ContainerImage.fromAsset('./docker/', {file: 'Dockerfile.noefs'});
+      magentoImage = ContainerImage.fromAsset('./docker/', { file: 'Dockerfile.noefs' });
     }
 
     const magento = new MagentoService(this, 'MagentoService', {

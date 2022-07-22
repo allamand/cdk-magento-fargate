@@ -137,7 +137,7 @@ Object {
       "Properties": Object {
         "Code": Object {
           "S3Bucket": "cdk-hnb659fds-assets-1234567890-us-east-1",
-          "S3Key": "39381d2c8b8ec42679de4960c24f0c83c56772cdc2b10b6fc14cd0a99aba42ed.zip",
+          "S3Key": "864aa5eb2d6ca4e0d4d65c940bc9e4d5a29db1e4f3f3a098ddb56f76b2129ac4.zip",
         },
         "Handler": "index.handler",
         "Role": Object {
@@ -146,7 +146,7 @@ Object {
             "Arn",
           ],
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -236,7 +236,7 @@ Object {
       "Properties": Object {
         "Code": Object {
           "S3Bucket": "cdk-hnb659fds-assets-1234567890-us-east-1",
-          "S3Key": "483ae06ed27ef8ca76e011264d772420593a6cfe8544759c306ef3b98c9e25be.zip",
+          "S3Key": "990410bab4a39b07c4495c3b8fae2f3f8847daabc9e3fc1debf3fa050c25e302.zip",
         },
         "Description": Object {
           "Fn::Join": Array [
@@ -258,7 +258,7 @@ Object {
             "Arn",
           ],
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1361,13 +1361,13 @@ Object {
         },
         "Volumes": Array [
           Object {
-            "EfsVolumeConfiguration": Object {
+            "EFSVolumeConfiguration": Object {
               "AuthorizationConfig": Object {
                 "AccessPointId": Object {
                   "Ref": "FileSystemAccessPointF8178182",
                 },
               },
-              "FileSystemId": Object {
+              "FilesystemId": Object {
                 "Ref": "FileSystem8A8E25C0",
               },
               "TransitEncryption": "ENABLED",
@@ -1924,8 +1924,8 @@ Object {
     },
     "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB": Object {
       "Properties": Object {
-        "MaxCapacity": 100,
-        "MinCapacity": 10,
+        "MaxCapacity": 30,
+        "MinCapacity": 1,
         "ResourceId": Object {
           "Fn::Join": Array [
             "",
@@ -1975,7 +1975,7 @@ Object {
           },
           "ScaleInCooldown": 10,
           "ScaleOutCooldown": 10,
-          "TargetValue": 50,
+          "TargetValue": 60,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -1994,7 +1994,7 @@ Object {
           },
           "ScaleInCooldown": 10,
           "ScaleOutCooldown": 10,
-          "TargetValue": 50,
+          "TargetValue": 60,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -2229,13 +2229,13 @@ Object {
         },
         "Volumes": Array [
           Object {
-            "EfsVolumeConfiguration": Object {
+            "EFSVolumeConfiguration": Object {
               "AuthorizationConfig": Object {
                 "AccessPointId": Object {
                   "Ref": "FileSystemAccessPointF8178182",
                 },
               },
-              "FileSystemId": Object {
+              "FilesystemId": Object {
                 "Ref": "FileSystem8A8E25C0",
               },
               "TransitEncryption": "ENABLED",
@@ -2958,7 +2958,7 @@ Object {
       "Properties": Object {
         "Code": Object {
           "S3Bucket": "cdk-hnb659fds-assets-1234567890-us-east-1",
-          "S3Key": "39381d2c8b8ec42679de4960c24f0c83c56772cdc2b10b6fc14cd0a99aba42ed.zip",
+          "S3Key": "864aa5eb2d6ca4e0d4d65c940bc9e4d5a29db1e4f3f3a098ddb56f76b2129ac4.zip",
         },
         "Handler": "index.handler",
         "Role": Object {
@@ -2967,7 +2967,7 @@ Object {
             "Arn",
           ],
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -3057,7 +3057,7 @@ Object {
       "Properties": Object {
         "Code": Object {
           "S3Bucket": "cdk-hnb659fds-assets-1234567890-us-east-1",
-          "S3Key": "483ae06ed27ef8ca76e011264d772420593a6cfe8544759c306ef3b98c9e25be.zip",
+          "S3Key": "990410bab4a39b07c4495c3b8fae2f3f8847daabc9e3fc1debf3fa050c25e302.zip",
         },
         "Description": Object {
           "Fn::Join": Array [
@@ -3079,7 +3079,7 @@ Object {
             "Arn",
           ],
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4187,13 +4187,13 @@ Object {
         },
         "Volumes": Array [
           Object {
-            "EfsVolumeConfiguration": Object {
+            "EFSVolumeConfiguration": Object {
               "AuthorizationConfig": Object {
                 "AccessPointId": Object {
                   "Ref": "FileSystemAccessPointF8178182",
                 },
               },
-              "FileSystemId": Object {
+              "FilesystemId": Object {
                 "Ref": "FileSystem8A8E25C0",
               },
               "TransitEncryption": "ENABLED",
@@ -4750,8 +4750,8 @@ Object {
     },
     "MagentoServiceServiceMagentoServiceTaskCountTarget913272EB": Object {
       "Properties": Object {
-        "MaxCapacity": 100,
-        "MinCapacity": 10,
+        "MaxCapacity": 30,
+        "MinCapacity": 1,
         "ResourceId": Object {
           "Fn::Join": Array [
             "",
@@ -4801,7 +4801,7 @@ Object {
           },
           "ScaleInCooldown": 10,
           "ScaleOutCooldown": 10,
-          "TargetValue": 50,
+          "TargetValue": 60,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -4820,7 +4820,7 @@ Object {
           },
           "ScaleInCooldown": 10,
           "ScaleOutCooldown": 10,
-          "TargetValue": 50,
+          "TargetValue": 60,
         },
       },
       "Type": "AWS::ApplicationAutoScaling::ScalingPolicy",
@@ -5055,13 +5055,13 @@ Object {
         },
         "Volumes": Array [
           Object {
-            "EfsVolumeConfiguration": Object {
+            "EFSVolumeConfiguration": Object {
               "AuthorizationConfig": Object {
                 "AccessPointId": Object {
                   "Ref": "FileSystemAccessPointF8178182",
                 },
               },
-              "FileSystemId": Object {
+              "FilesystemId": Object {
                 "Ref": "FileSystem8A8E25C0",
               },
               "TransitEncryption": "ENABLED",
