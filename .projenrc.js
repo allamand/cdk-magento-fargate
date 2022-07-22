@@ -1,4 +1,4 @@
-const { awscdk } = require('projen');
+const {awscdk} = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',
@@ -58,5 +58,8 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
+
+//Fix for this issue https://github.com/projen/projen/issues/1885
+project.addDevDeps('ts-node@^10');
 
 project.synth();
