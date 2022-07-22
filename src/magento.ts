@@ -193,7 +193,9 @@ export class MagentoService extends Construct {
     // Lookup pre-existing TLS certificate for our magento service:
     const r53DomainZone = this.node.tryGetContext('route53_domain_zone');
     if (!r53DomainZone) {
-      throw 'r53DomainZone is mandatory, you need to provide valid route53 domain';
+      console.log(
+        'Consider specifying r53DomainZoneparameter to work securely in TLS, you need to provide valid route53 domain',
+      );
     }
 
     /**
