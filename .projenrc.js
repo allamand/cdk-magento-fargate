@@ -1,4 +1,4 @@
-const {awscdk} = require('projen');
+const { awscdk } = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
   authorName: 'Amazon Web Services',
   authorUrl: 'https://aws.amazon.com',
@@ -32,6 +32,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     //useFSX: 'yes', // if yes, create en EC2 based cluster (required for FsX), if no create Fargate cluster
     ec2Cluster: 'no', // if yes, create en EC2 based cluster (required for FsX), if no create Fargate cluster
 
+    // You can customize Instances size
     // ec2InstanceType: 'c5.9xlarge',
     // rdsInstanceType: 'r6g.8xlarge',
     // cacheInstanceType: 'r6g.8xlarge',
@@ -42,7 +43,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
     magentoMinTasks: 10,
     magentoMaxTasks: 100,
 
-    //route53_domain_zone: 'sallaman.people.aws.dev',
+    //route53_domain_zone: 'sallaman.people.aws.dev', // You need ot provide a valide AWS Route53 Hosted Zone.
 
     magento_admin_task: 'yes',
     magento_admin_task_debug: 'no',
@@ -57,5 +58,8 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   // packageName: undefined,      /* The "name" in package.json. */
   // release: undefined,          /* Add release management to this project. */
 });
+
+//Fix for this issue https://github.com/projen/projen/issues/1885
+project.addDevDeps('ts-node@^10');
 
 project.synth();
