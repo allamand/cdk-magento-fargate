@@ -1,3 +1,16 @@
+# THE PROJECT AS BEEN MOVED TO AWS-SAMPLES, this one is archived
+
+https://github.com/aws-samples/magento-ecs-cdk
+
+
+
+
+
+
+
+
+
+
 # Magento deployment on AWS using ECS (on EC2 or Fargate), RDS, OpenSearch, and (EFS of FsX OnTap) deployed with CDK
 
 ## Overview
